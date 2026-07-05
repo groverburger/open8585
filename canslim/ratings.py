@@ -100,9 +100,22 @@ def compute_price_metrics(prices: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def add_rs_rating(metrics: pd.DataFrame) -> pd.DataFrame:
+def add_rs_rating(metrics: pd.DataFrame, pool_size: int | None = None) -> pd.DataFrame:
+    """RS rating 1-99 by percentile of the raw score.
+
+    pool_size models a larger rating universe (IBD percentiles against
+    ~8,000-10,000 stocks incl. OTC vs our ~5,500 listed): the extra
+    hypothetical members are assumed to rank below every real one, which
+    lifts everyone's percentile. Off by default - it makes ratings more
+    IBD-comparable but strictly more generous than our own universe
+    justifies.
+    """
     metrics = metrics.copy()
-    metrics["rs_rating"] = percentile_1_99(metrics["rs_raw"]).astype("Int64")
+    if pool_size and pool_size > metrics["rs_raw"].notna().sum():
+        rank = metrics["rs_raw"].rank(ascending=False, method="min")
+        metrics["rs_rating"] = np.ceil(99 * (1 - rank / pool_size)).clip(1, 99).astype("Int64")
+    else:
+        metrics["rs_rating"] = percentile_1_99(metrics["rs_raw"]).astype("Int64")
     return metrics
 
 

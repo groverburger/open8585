@@ -26,9 +26,12 @@ def main() -> None:
     parser.add_argument("--min-price", type=float, default=10.0)
     parser.add_argument("--max-off-high", type=float, default=15.0, help="max %% below 52-week high")
     parser.add_argument("--min-adv", type=float, default=10_000, help="min avg daily volume, shares")
-    parser.add_argument("--ref-sample", type=int, default=400, help="reference sample size for EPS percentiles")
+    parser.add_argument("--ref-sample", type=int, default=None,
+                        help="quick mode: EPS percentiles vs a random N-stock sample instead of the full universe")
     parser.add_argument("--limit", type=int, default=None, help="cap universe to top N by market cap (testing)")
     parser.add_argument("--as-of", type=str, default=None, help="compute screen as of this date (YYYY-MM-DD)")
+    parser.add_argument("--rs-pool", type=int, default=None,
+                        help="model IBD's larger RS universe (e.g. 8000); more IBD-comparable, more generous")
     parser.add_argument("--refresh", action="store_true", help="ignore caches and re-download")
     args = parser.parse_args()
 
@@ -43,6 +46,7 @@ def main() -> None:
         refresh=args.refresh,
         limit=args.limit,
         as_of=args.as_of,
+        rs_pool_size=args.rs_pool,
     )
     screen, rated = run_screen(cfg)
 

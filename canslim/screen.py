@@ -29,11 +29,16 @@ class ScreenConfig:
     min_adv: float = 10_000
     min_rs: int = 85
     min_eps: int = 85
-    ref_sample_size: int = 400
+    # None = fetch fundamentals for the whole universe and percentile
+    # against all of it (IBD-faithful; first run is slow). An integer runs
+    # in quick mode against a random reference sample instead - expect
+    # several rating points of sampling jitter at the 85 boundary.
+    ref_sample_size: int | None = None
     ref_seed: int = 8585
     refresh: bool = False
     limit: int | None = None  # cap universe size, for testing
     as_of: str | None = None  # compute price metrics as of this date (YYYY-MM-DD)
+    rs_pool_size: int | None = None  # model IBD's larger RS universe (e.g. 8000)
 
 
 def run_screen(cfg: ScreenConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -61,7 +66,7 @@ def run_screen(cfg: ScreenConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     print("[3/6] computing RS / A-D ratings and price metrics")
     metrics = ratings.compute_price_metrics(prices)
-    metrics = ratings.add_rs_rating(metrics)
+    metrics = ratings.add_rs_rating(metrics, pool_size=cfg.rs_pool_size)
     metrics = ratings.add_ad_rating(metrics)
     rated = metrics.merge(universe, on="symbol", how="left")
 
@@ -77,15 +82,24 @@ def run_screen(cfg: ScreenConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
     ].copy()
     print(f"  {len(survivors)} survivors of price/RS filters")
 
-    print("[5/6] fundamentals for survivors + reference sample")
-    rng = random.Random(cfg.ref_seed)
-    liquid = rated[rated["adv50"] >= cfg.min_adv]["symbol"].tolist()
-    ref_syms = rng.sample(liquid, min(cfg.ref_sample_size, len(liquid)))
-    fetch_syms = sorted(set(survivors["symbol"]) | set(ref_syms))
+    pool = rated["symbol"].tolist()
+    if cfg.ref_sample_size:
+        # quick mode: percentile against a uniform random sample of the
+        # universe (uniform, not liquid-only: IBD percentiles against its
+        # whole database, so a liquid-only reference over-tightens the bar)
+        print(f"[5/6] fundamentals for survivors + {cfg.ref_sample_size}-stock reference sample")
+        rng = random.Random(cfg.ref_seed)
+        ref_syms = set(rng.sample(pool, min(cfg.ref_sample_size, len(pool))))
+        fetch_syms = sorted(set(survivors["symbol"]) | ref_syms)
+    else:
+        # IBD-faithful mode: percentile against every rated stock
+        print("[5/6] fundamentals for the full universe")
+        ref_syms = set(pool)
+        fetch_syms = sorted(pool)
     records = fnd.fetch_fundamentals(fetch_syms, data_dir / "fundamentals", refresh=cfg.refresh)
 
     fmetrics = pd.DataFrame([fnd.eps_metrics(r) for r in records.values()])
-    fmetrics["eps_rating"] = fnd.eps_rating_vs_reference(fmetrics, set(ref_syms))
+    fmetrics["eps_rating"] = fnd.eps_rating_vs_reference(fmetrics, ref_syms & set(fmetrics["symbol"]))
 
     print("[6/6] final EPS filter")
     screen = survivors.merge(fmetrics, on="symbol", how="left")

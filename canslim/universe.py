@@ -36,6 +36,11 @@ EXCLUDE_NAME_FRAGMENTS = (
     "acquisition corp",
     "acquisition co",
     "blank check",
+    # exchange-traded debt (baby bonds) is listed alongside stocks
+    " notes",
+    "debenture",
+    "% senior",
+    "% junior",
 )
 
 CACHE_MAX_AGE_DAYS = 3

@@ -1,8 +1,8 @@
 # Status
 
-**2026-07-05** — v0.2: validated against a captured IBD 85-85 list.
+**2026-07-05** — v0.3: validated against a captured IBD 85-85 list.
 
-Overlap with IBD's 99-name list improved 5% → 45% over the session:
+Overlap with IBD's 99-name list improved 5% → 56% over the session:
 
 | change | overlap |
 |---|---|
@@ -11,7 +11,11 @@ Overlap with IBD's 99-name list improved 5% → 45% over the session:
 | rank-based EPS composite (raw ±999 growth saturates percentiles) | 34% |
 | street EPS backfill + loss-narrowing ≠ growth + ceil(99p) mapping | 34%* |
 | closing (not intraday) 52-wk high, CEF exclusion, quarters-block required | 41% |
-| quarters block weighted 60/40 vs multi-year leg | **45%** |
+| quarters block weighted 60/40 vs multi-year leg | 45% |
+| earnings stability factor (log-trend residual std, weight 0.25) | 56%* |
+| full-universe percentiles, 3yr stability window, debt exclusion | **58%** |
+
+*sampled-reference runs carry ±7 names of seed jitter; 58% is deterministic.
 
 *same overlap, but component data became correct (DELL's +214% quarter
 matched IBD exactly); the blend, not the data, was then the bottleneck.
@@ -31,13 +35,51 @@ Key empirical findings (all verified against the captured list):
   (`validation/backfill_one.py`); threaded bulk fetch works for income
   statements only.
 
+The stability factor was the biggest single-change win: it raised recall
+(46→56 of the names reaching the EPS stage) and cut extras (65→58)
+simultaneously, and upgraded the remaining extras from erratic ±999 names
+to steady industrials that plausibly sit just under IBD's bar.
+
+## Difference decomposition (2026-07-05 investigation)
+
+Every remaining divergence from IBD's list traced to a measured cause:
+
+- **RS: fully explained by universe breadth.** Min RS across all 99 IBD
+  names is 78; every near-miss (15 names, 78–84) flips to ≥85 at a modeled
+  pool of 7,900 stocks — IBD rates ~8,000–10,000 incl. OTC vs our ~5,400
+  listed. `--rs-pool 8000` models this (opt-in; it grows the list ~30%).
+- **EPS deep misses: three causes.** (1) Reference-pool composition — IBD
+  ranks against its whole junky database; a liquid-only reference
+  over-tightens our bar (fixed: uniform, then full-universe default).
+  (2) Stability window — 4yr window let 2022-era losses nuke recovered
+  names IBD rates 85+ (MTZ, CAKE, BJRI); 3yr window fixed. (3) Vendor EPS
+  databases — 12 of 98 names have printed EPS %Chg differing >15pts from
+  Yahoo street EPS (VICR 271 vs 633, IHG's Yahoo earnings calendar ends in
+  2013). Irreducible with free data, ~12% noise floor.
+- **Reference-sample jitter was contaminating tuning decisions**: with a
+  400-stock sample, IBD-overlap swings ±7 names on the sample seed alone
+  (44–59 across five seeds). Full-universe percentiles (now default)
+  eliminate the sampling entirely; --ref-sample N remains as quick mode.
+- **No look-ahead**: all fundamentals used in the as-of validation were
+  reported before IBD's compute date (verified per symbol).
+- Also fixed: exchange-traded debt (baby bonds) had leaked into the
+  universe/reference (GPJA-style "% Junior Subordinated Notes" listings).
+
+Final miss decomposition (42 of 99, all causes measured, none unknown):
+18 RS near-misses (pool breadth, all flip at --rs-pool 8000), 3 off-high
+boundary/vendor cases, 11 EPS boundary (75–84), 10 EPS deep — of which PEB
+is structural (IBD rates REITs on FFO), CARE/SMTC are vendor EPS-database
+differences, and ~6 (MTZ, WLFC, BJRI, OPLN, ILMN, FLXS, NHC at 58–74) are
+the residual formula difference: IBD rewards steady-but-slow earners more
+than pure growth percentiles imply.
+
 ## Known gaps / next ideas
 
-- Remaining IBD misses: ~15 RS near-misses (78–84, irreducible), ~35 EPS
-  boundary/stability cases, plus IBD's editorial "industry group leaders"
-  curation which no formula matches.
-- No EPS stability factor yet (IBD penalizes erratic earnings) — likely the
-  best remaining lever for cutting our ~65 extras.
+- The ~6-name residual: IBD's exact treatment of steady slow-growers
+  (FLXS gets IBD EPS ≥85 with +1% growth). Possibly a stronger stability
+  interaction or floor; needs more captured weeks to fit without
+  overfitting.
+- REIT FFO-based EPS (fixes PEB-class misses).
 - Reference-sample ECDF (n=400) has ±2-3 rating points of jitter at the 85
   boundary; a larger sample would stabilize it.
 - Move street-EPS fetching into the package as subprocess-isolated serial

@@ -67,9 +67,18 @@ blocks,
 ```
 quarters block = mean(pct(latest quarter YoY), pct(prior quarter YoY))
 combined       = 0.6 · quarters block + 0.4 · pct(multi-year growth)
+combined      -= 0.25 · (pct(earnings instability) − 0.5)
 ```
 
 and the combined score is percentiled once more into 1–99.
+
+The last term is IBD's **earnings stability factor**: the residual standard
+deviation of log quarterly EPS around its fitted trend line over the last
+3–4 years (any loss quarter counts as maximally erratic; under 8 quarters of
+history the adjustment is neutral). Steady growers get a boost, erratic
+earners a haircut. In validation this factor improved recall of IBD's names
+*and* cut false extras at the same time — it is the single most
+IBD-distinctive part of the rating.
 
 - Reported (street) EPS is preferred — it excludes one-time items, closest to
   what IBD uses; GAAP diluted EPS is the fallback. The multi-year leg uses
@@ -88,14 +97,14 @@ and the combined score is percentiled once more into 1–99.
   demonstrably rates cyclicals with huge current quarters but flat multi-year
   records (DELL, TER, SIMO) at 85+, so recent quarters must dominate.
 
-**Percentile trick:** fetching fundamentals for all ~7,000 stocks every week
-is slow, so the screen fetches them only for stocks that already passed the
-price filters *plus a random reference sample of ~400 liquid stocks*. The
-reference sample's composite-growth distribution estimates the full market's,
-and every stock is rated by its percentile within that reference ECDF. This
-keeps ratings anchored to "beats X% of the market" instead of "beats X% of
-stocks that already passed a momentum screen" (which would be far stricter
-than IBD's 85).
+**Full-universe percentiles by default:** EPS ratings are percentiled against
+every rated stock, exactly like IBD. The first run fetches fundamentals for
+the whole universe (slow — roughly an hour; cached for 7 days thereafter).
+`--ref-sample 400` runs in quick mode against a uniform random sample of the
+universe instead — fine for exploration, but expect several rating points of
+sampling jitter at the 85 boundary (we measured overlap with IBD's list
+swinging ±7 names on the sample seed alone, which is why full-universe is
+the default).
 
 ### Accumulation/Distribution Rating — A+ to E−
 
@@ -138,13 +147,19 @@ the RS, EPS, and A/D ratings themselves.
 ## How close is this to IBD's list?
 
 Validated against a captured IBD 85-85 list (99 stocks, early July 2026;
-`validation/`): our screen recovers **45 of IBD's 99 names** with ~65 extra
-names IBD doesn't print. For context on the gap:
+`validation/`): our screen recovers **57 of IBD's 99 names** (deterministic,
+full-universe percentiles) with ~59 extra names IBD doesn't print. Every
+remaining miss traces to a measured cause — universe breadth (RS), vendor
+EPS-database differences, REIT FFO accounting, or threshold-boundary cases;
+none are unexplained. For context on the gap:
 
-- **RS ratings** track IBD closely — 85 of IBD's 99 names score ≥ 85 on our
-  RS, and every miss is in the 78–84 band (proprietary universe/formula
-  noise). The formula reconstruction is well established and prices are
-  public.
+- **RS ratings** track IBD closely — 84+ of IBD's 99 names score ≥ 85 on our
+  RS, every miss is in the 78–84 band, and the gap is *fully explained by
+  universe breadth*: IBD percentiles against ~8,000–10,000 stocks (incl.
+  OTC) vs our ~5,400 listed names, and every single near-miss flips to 85+
+  at a modeled pool of 7,900. `--rs-pool 8000` applies that model if you
+  want IBD-comparable ratings (more generous than our own universe
+  justifies, so it's off by default).
 - **EPS ratings** differ more: IBD uses its own earnings database, applies a
   stability factor, and weights things it doesn't disclose. Reported-EPS
   history from Yahoo is shallower (~2 years), so the annual-growth leg leans

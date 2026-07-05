@@ -192,6 +192,26 @@ def _ttm_growth(records: list[list]) -> float:
     return _cagr(first_ttm, last_ttm, years)
 
 
+def _stability(records: list[list], max_quarters: int = 12) -> float:
+    """Earnings stability, IBD-style: residual std of log quarterly EPS
+    around its fitted trend line over the last 3 years. Lower = steadier.
+    Any loss quarter in the window counts as maximally erratic; under 8
+    quarters of history there is no basis to judge (NaN). A 3-year window
+    (vs 4+) lets old losses age out — validated against the captured IBD
+    list, which rates recovered names like MTZ at 85+ despite 2022-era
+    losses."""
+    vals = [v for _, v in records][-max_quarters:]
+    if len(vals) < 8:
+        return np.nan
+    if min(vals) <= 0:
+        return 999.0
+    y = np.log(vals)
+    x = np.arange(len(y), dtype=float)
+    slope, intercept = np.polyfit(x, y, 1)
+    resid = y - (slope * x + intercept)
+    return float(resid.std())
+
+
 def eps_metrics(rec: dict) -> dict:
     """Growth metrics + composite score for one ticker's fundamentals."""
     q_growths = _quarterly_yoy(rec.get("reported_eps") or [])
@@ -205,11 +225,13 @@ def eps_metrics(rec: dict) -> dict:
         annual = _annual_growth(rec.get("a_eps") or [])
     sales_growths = _quarterly_yoy(rec.get("q_revenue") or [], n_quarters=1)
 
+    stability_src = rec.get("reported_eps") or rec.get("q_eps") or []
     return {
         "symbol": rec["symbol"],
         "eps_q0_growth": q_growths[0] if len(q_growths) > 0 else np.nan,
         "eps_q1_growth": q_growths[1] if len(q_growths) > 1 else np.nan,
         "eps_annual_growth": annual,
+        "eps_stability": _stability(stability_src),
         "sales_growth": sales_growths[0] if sales_growths else np.nan,
         "eps_source": eps_source,
     }
@@ -220,6 +242,13 @@ def eps_metrics(rec: dict) -> dict:
 # with huge current quarters but flat multi-year records (DELL, TER, SIMO)
 # at 85+, so the recent quarters must dominate the multi-year leg.
 QUARTER_BLOCK_WEIGHT = 0.6
+
+# How strongly erratic earnings drag the combined growth score down, in
+# units of the combined [0,1] percentile scale. 0 disables the factor.
+# 0.25 sits mid-plateau in the validation sweep against the captured IBD
+# list, where the factor raised recall AND cut false extras simultaneously
+# (IBD's 85+ names are steady growers; erratic ±999 names are not).
+STABILITY_WEIGHT = 0.25
 
 
 def _pct_vs_ref(values: pd.Series, ref_values: pd.Series) -> pd.Series:
@@ -266,6 +295,12 @@ def eps_rating_vs_reference(fmetrics: pd.DataFrame, ref_symbols: set[str]) -> pd
     # there is no evidence of current earnings power (this is what keeps
     # closed-end funds' and shell companies' annual-only figures out).
     combined = combined.fillna(q_block)
+
+    if STABILITY_WEIGHT:
+        # erratic-earnings percentile (1.0 = most erratic vs reference);
+        # unknown stability is treated as market-median, i.e. no adjustment
+        erratic = pct("eps_stability").fillna(0.5)
+        combined = combined - STABILITY_WEIGHT * (erratic - 0.5)
 
     final_pct = _pct_vs_ref(combined, combined[ref_mask])
     return final_pct.map(
