@@ -21,6 +21,16 @@ python3 run_screen.py --limit 500     # quick test on top 500 by market cap
 python3 run_screen.py --refresh       # ignore caches, re-download everything
 ```
 
+The A/D rating and the EPS+RS sum can be applied as filters on top of the
+85-85 list, matching the Fred Richards screens used by practitioners of the
+O'Neil methodology:
+
+```bash
+python3 run_screen.py --min-ad B-                    # accumulation B or better
+python3 run_screen.py --min-ad B- --min-eps-rs 180   # "aggressive" screen
+python3 run_screen.py --min-ad A- --min-eps-rs 190   # "conservative" screen
+```
+
 Results land in `output/screen_<date>.csv` and `output/screen_<date>.md`, plus
 `output/ratings_<date>.csv` containing the full universe with RS and A/D
 ratings for your own analysis. Data caches live in `data/` (universe JSON,

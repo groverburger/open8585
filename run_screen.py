@@ -26,6 +26,10 @@ def main() -> None:
     parser.add_argument("--min-price", type=float, default=10.0)
     parser.add_argument("--max-off-high", type=float, default=15.0, help="max %% below 52-week high")
     parser.add_argument("--min-adv", type=float, default=10_000, help="min avg daily volume, shares")
+    parser.add_argument("--min-ad", type=str, default=None, metavar="GRADE",
+                        help="min A/D rating, e.g. B- (keeps B- and better); aggressive screen uses B-, conservative A-")
+    parser.add_argument("--min-eps-rs", type=int, default=None,
+                        help="min EPS+RS rating sum (Fred Richards: 180 aggressive, 190 conservative)")
     parser.add_argument("--ref-sample", type=int, default=None,
                         help="quick mode: EPS percentiles vs a random N-stock sample instead of the full universe")
     parser.add_argument("--limit", type=int, default=None, help="cap universe to top N by market cap (testing)")
@@ -34,6 +38,11 @@ def main() -> None:
                         help="model IBD's larger RS universe (e.g. 8000); more IBD-comparable, more generous")
     parser.add_argument("--refresh", action="store_true", help="ignore caches and re-download")
     args = parser.parse_args()
+    if args.min_ad:
+        from canslim.ratings import GRADE_SCALE
+        args.min_ad = args.min_ad.upper()
+        if args.min_ad not in GRADE_SCALE:
+            parser.error(f"--min-ad must be one of {', '.join(GRADE_SCALE)}")
 
     cfg = ScreenConfig(
         data_dir=args.data_dir,
@@ -42,6 +51,8 @@ def main() -> None:
         min_adv=args.min_adv,
         min_rs=args.min_rs,
         min_eps=args.min_eps,
+        min_ad=args.min_ad,
+        min_eps_rs=args.min_eps_rs,
         ref_sample_size=args.ref_sample,
         refresh=args.refresh,
         limit=args.limit,

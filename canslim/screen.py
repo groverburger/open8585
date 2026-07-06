@@ -29,6 +29,11 @@ class ScreenConfig:
     min_adv: float = 10_000
     min_rs: int = 85
     min_eps: int = 85
+    # Owen Cupp / Fred Richards-style overlays on the 85-85 list:
+    # aggressive screen = --min-ad B- (A or B rating) with min_eps_rs 180,
+    # conservative     = --min-ad A- with min_eps_rs 190.
+    min_ad: str | None = None  # e.g. "B-" keeps B- and better
+    min_eps_rs: int | None = None  # minimum EPS rating + RS rating sum
     # None = fetch fundamentals for the whole universe and percentile
     # against all of it (IBD-faithful; first run is slow). An integer runs
     # in quick mode against a random reference sample instead - expect
@@ -105,6 +110,18 @@ def run_screen(cfg: ScreenConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
     print("[6/6] final EPS filter")
     screen = survivors.merge(fmetrics, on="symbol", how="left")
     screen = screen[(screen["eps_rating"] >= cfg.min_eps).fillna(False)]
+    screen["eps_rs_sum"] = screen["eps_rating"] + screen["rs_rating"]
+
+    if cfg.min_ad:
+        max_rank = ratings.grade_rank(cfg.min_ad)
+        keep = screen["ad_rating"].map(
+            lambda g: ratings.grade_rank(g) <= max_rank if pd.notna(g) else False
+        )
+        screen = screen[keep]
+        print(f"  A/D filter >= {cfg.min_ad}: {len(screen)} remain")
+    if cfg.min_eps_rs:
+        screen = screen[(screen["eps_rs_sum"] >= cfg.min_eps_rs).fillna(False)]
+        print(f"  EPS+RS filter >= {cfg.min_eps_rs}: {len(screen)} remain")
 
     # One line per company: when multiple share classes pass (e.g. BELFA and
     # BELFB), keep the class with the higher average daily volume.
@@ -135,6 +152,7 @@ DISPLAY_COLUMNS = {
     "sales_growth": "Sales %Chg",
     "rs_rating": "RS",
     "eps_rating": "EPS",
+    "eps_rs_sum": "EPS+RS",
     "ad_rating": "A/D",
 }
 

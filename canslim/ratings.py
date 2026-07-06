@@ -39,6 +39,13 @@ RS_WEIGHTS = (2.0, 1.0, 1.0, 1.0)
 MIN_HISTORY_DAYS = 63
 AD_LOOKBACK = 65
 AD_GRADES = ("A", "B", "C", "D", "E")
+# full grade scale, best first
+GRADE_SCALE = tuple(f"{letter}{sign}" for letter in AD_GRADES for sign in ("+", "", "-"))
+
+
+def grade_rank(grade: str) -> int:
+    """Position of a letter grade on the 15-point scale (0 = A+, 14 = E-)."""
+    return GRADE_SCALE.index(grade)
 
 
 def percentile_1_99(series: pd.Series) -> pd.Series:

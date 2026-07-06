@@ -97,7 +97,27 @@ weeks: Spearman +0.67, every sample within ~1 letter grade
 - SMR: not built (needs margins + ROE from balance sheets); the 5 captured
   SMR labels (4 A's, 1 B) are recorded for when it exists.
 
+**Project goals (clarified 2026-07-05)**: (1) open-source the proprietary
+IBD rating methodology; (2) support an Owen Cupp / Fred Richards-style
+workflow: 85-85 list + A/D filter as the primary screen, pocket-pivot
+entries layered on top. Priorities are RS, EPS, and A/D; SMR/Composite are
+nice-to-have. `--min-ad` and `--min-eps-rs` implement the Richards
+aggressive (B-, 180) and conservative (A-, 190) screens. Lecture
+transcript: ~/Documents/projects/pocket-pivots/downloads/
+2020-ibd-joint-day1-owen/.
+
 ## Known gaps / next ideas
+
+- **85-85 index** (from the lecture): price-weighted index of list
+  members, regenerated weekly; its 50-day MA cross is used as a
+  margin-on/off market gate. Buildable from our weekly lists.
+- **Earnings stability display**: IBD publishes stability 1-99 (<25 =
+  stable enough for the PE-expansion model); we compute the raw metric
+  already — expose it as a column.
+- **Pocket pivot detection** on list members (entry timing) — likely its
+  own module or project.
+- 25%-advance-in-6-months claim for list debuts is backtestable with our
+  --as-of machinery.
 
 - The ~6-name residual: IBD's exact treatment of steady slow-growers
   (FLXS gets IBD EPS ≥85 with +1% growth). Possibly a stronger stability
