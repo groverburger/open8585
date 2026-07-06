@@ -72,6 +72,7 @@ def run_screen(cfg: ScreenConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     ind_ranks = ratings.industry_ranks(metrics, universe)
     rated["industry_rank"] = rated["industry"].map(ind_ranks).astype("Int64")
+    rated["group_grade"] = rated["industry"].map(ratings.group_grade(ind_ranks))
 
     print("[4/6] price-based filters")
     survivors = rated[

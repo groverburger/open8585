@@ -1,0 +1,7 @@
+# IBD Stock Checkup ratings, captured 2026-07-05
+# symbol composite eps rs group_rs smr ad
+MTSI 93 87 95 A A D
+GOOGL 90 99 85 C- A D
+LLY 99 99 85 A- A A
+MU 98 85 99 A+ A C-
+COHR 94 95 96 A+ B D-

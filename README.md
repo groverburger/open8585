@@ -153,13 +153,13 @@ remaining miss traces to a measured cause — universe breadth (RS), vendor
 EPS-database differences, REIT FFO accounting, or threshold-boundary cases;
 none are unexplained. For context on the gap:
 
-- **RS ratings** track IBD closely — 84+ of IBD's 99 names score ≥ 85 on our
-  RS, every miss is in the 78–84 band, and the gap is *fully explained by
-  universe breadth*: IBD percentiles against ~8,000–10,000 stocks (incl.
-  OTC) vs our ~5,400 listed names, and every single near-miss flips to 85+
-  at a modeled pool of 7,900. `--rs-pool 8000` applies that model if you
-  want IBD-comparable ratings (more generous than our own universe
-  justifies, so it's off by default).
+- **RS ratings are calibrated to IBD's**: on five captured IBD Stock
+  Checkup values, our native RS matched four within 1 point (MTSI 94/95,
+  GOOGL 85/85, MU 99/99, COHR 96/96) and the fifth within 3. The 85-85
+  list's RS near-misses (all 78–84) therefore look like compute-date
+  timing rather than rating error. `--rs-pool 8000` models a larger IBD
+  universe but overshot on the same test — treat it as an experiment, not
+  a fix.
 - **EPS ratings** differ more: IBD uses its own earnings database, applies a
   stability factor, and weights things it doesn't disclose. Reported-EPS
   history from Yahoo is shallower (~2 years), so the annual-growth leg leans

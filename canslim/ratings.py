@@ -151,3 +151,20 @@ def industry_ranks(metrics: pd.DataFrame, universe: pd.DataFrame, min_members: i
     grouped = merged.groupby("industry")["rs_rating"].agg(["median", "count"])
     ranked = grouped[grouped["count"] >= min_members]["median"]
     return ranked.rank(ascending=False, method="min").astype(int)
+
+
+def group_grade(rank: pd.Series) -> pd.Series:
+    """Letter-grade industry group ranks A+ .. E- (IBD's Group RS scale):
+    quintiles of the group-rank distribution with +/- thirds."""
+    n = rank.max()
+    pct = 1 - (rank - 1) / n  # 1.0 = best group
+
+    def grade(p: float) -> str | None:
+        if pd.isna(p):
+            return None
+        quintile = min(int((1 - p) * 5), 4)
+        within = (1 - p) * 5 - quintile
+        sign = "+" if within < 1 / 3 else ("" if within < 2 / 3 else "-")
+        return AD_GRADES[quintile] + sign
+
+    return pct.map(grade)

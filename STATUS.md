@@ -81,6 +81,22 @@ return × relative volume, recency-weighted (~1-month half-life) over 13
 weeks: Spearman +0.67, every sample within ~1 letter grade
 (`validation/ibd_ad_samples_2026-07.txt`).
 
+**Per-stock IBD Checkup calibration (2026-07-05,
+`validation/ibd_checkup_2026-07.txt`)**: five full rating vectors captured.
+- RS: native pool matches IBD nearly exactly (4/5 within 1 pt) — the
+  --rs-pool inflation hypothesis is refuted as a *rating* fix; the 85-85
+  list RS near-misses were likely compute-date timing.
+- EPS: MAE ~8 pts, no systematic bias (COHR −13 worst, consistent with its
+  vendor EPS data gap).
+- A/D: raw-score ordering right (Spearman ~0.67 on 10 labels), letter
+  boundaries carry ~2/3-letter MAE; boundary refitting overfits 10 samples
+  and was rejected — remaining error is in the raw score.
+- Group RS letters added (`group_grade`): exact at the top (MU/COHR A+),
+  harsh in the mid/low ranks where IBD's 197 proprietary groups diverge
+  from NASDAQ's 146 buckets.
+- SMR: not built (needs margins + ROE from balance sheets); the 5 captured
+  SMR labels (4 A's, 1 B) are recorded for when it exists.
+
 ## Known gaps / next ideas
 
 - The ~6-name residual: IBD's exact treatment of steady slow-growers
