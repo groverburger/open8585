@@ -73,6 +73,14 @@ differences, and ~6 (MTZ, WLFC, BJRI, OPLN, ILMN, FLXS, NHC at 58–74) are
 the residual formula difference: IBD rewards steady-but-slow earners more
 than pure growth percentiles imply.
 
+**A/D rating validated and fixed (2026-07-05)**: against 9 captured IBD
+grades, the original close-location (intraday range) formula was
+uncorrelated (Spearman +0.06) — it misses gap moves, so crash-on-volume
+names (COHR, MTSI, GOOGL) read as accumulation. Replaced with capped daily
+return × relative volume, recency-weighted (~1-month half-life) over 13
+weeks: Spearman +0.67, every sample within ~1 letter grade
+(`validation/ibd_ad_samples_2026-07.txt`).
+
 ## Known gaps / next ideas
 
 - The ~6-name residual: IBD's exact treatment of steady slow-growers

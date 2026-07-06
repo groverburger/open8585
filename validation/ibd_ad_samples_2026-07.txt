@@ -1,0 +1,11 @@
+# IBD Accumulation/Distribution ratings, captured 2026-07-05
+# symbol grade
+GOOGL D
+LLY A
+PANW A+
+BNY E
+MNST B+
+DELL B
+NTAP B
+COHR D-
+MTSI D

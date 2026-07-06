@@ -14,10 +14,14 @@ RS Rating
     windows, mirroring how IBD still rates recent IPOs).
 
 Accumulation/Distribution Rating
-    Volume-weighted close-location money flow over the last 13 weeks
-    (65 sessions): each day contributes volume * ((C-L)-(H-C))/(H-L);
-    the sum is normalized by total volume, percentile-ranked, and mapped
-    to A+ .. E- (A = heavy institutional buying, E = heavy selling).
+    Day-over-day price direction on volume over the last 13 weeks:
+    each session contributes clip(daily return, ±10%) x (volume / average
+    volume), recency-weighted with a ~1-month half-life. The sum is
+    percentile-ranked and mapped to A+ .. E- (A = heavy institutional
+    buying, E = heavy selling). Day-over-day direction matters: a
+    close-location (intraday range) formula misses gap moves entirely and
+    scored near-zero rank correlation against IBD's published A/D grades,
+    vs +0.73 for this one (9-sample validation, see validation/).
 
 Industry Group Rank
     Industry groups ranked 1..N by the median RS rating of their members
@@ -76,13 +80,16 @@ def compute_price_metrics(prices: pd.DataFrame) -> pd.DataFrame:
 
         price_day_chg = (last / close[-2] - 1) * 100 if n >= 2 else np.nan
 
-        tail = g.tail(AD_LOOKBACK)
-        h, l, c, v = (tail[k].to_numpy(float) for k in ("high", "low", "close", "volume"))
-        rng = h - l
-        with np.errstate(divide="ignore", invalid="ignore"):
-            mult = np.where(rng > 0, ((c - l) - (h - c)) / rng, 0.0)
-        total_v = v.sum()
-        ad_raw = float((mult * v).sum() / total_v) if total_v > 0 else np.nan
+        tail = g.tail(AD_LOOKBACK + 1)  # +1: day-over-day changes need a prior close
+        c_ad, v_ad = tail["close"].to_numpy(float), tail["volume"].to_numpy(float)
+        rets = np.clip(np.diff(c_ad) / c_ad[:-1], -0.10, 0.10)
+        v1 = v_ad[1:]
+        mean_v = v1.mean()
+        if len(rets) and mean_v > 0:
+            decay = 0.5 ** (np.arange(len(rets))[::-1] / 20)
+            ad_raw = float((rets * (v1 / mean_v) * decay).sum() / decay.sum())
+        else:
+            ad_raw = np.nan
 
         rows.append(
             {
