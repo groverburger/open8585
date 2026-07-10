@@ -109,7 +109,10 @@ IBD-distinctive part of the rating.
   else GAAP annual EPS CAGR (3–4 fiscal years).
 - Growth off a zero/negative base follows IBD's convention: displayed as ±999.
   A company still losing money scores −999 however much the loss narrowed —
-  only actually turning profitable earns +999. Ranking per component (rather
+  only actually turning profitable earns +999. A displayed 999 can therefore
+  mean either "turned profitable" (a percentage off a non-positive base is
+  not meaningful) or genuine growth beyond 999%, display-capped — the
+  published tables carry a hover tooltip on these cells. Ranking per component (rather
   than averaging raw growth rates) keeps the mass of ±999 ties from
   saturating the composite — with raw averaging an 85+ rating is literally
   unreachable.

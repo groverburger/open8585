@@ -58,6 +58,20 @@ tr:hover td { background:#f4f3f0; }
 .new { color:var(--up-t); font-weight:700; font-size:11px; }
 .pos { color:var(--up-t); } .neg { color:var(--down); }
 .disclaimer { color:var(--muted); font-size:11px; margin-top:28px; max-width:88ch; }
+td.t999 { text-decoration:underline dotted var(--muted); text-underline-offset:2px; cursor:help; }
+.foot-actions { margin-top:14px; }
+button.dlcsv { font:inherit; padding:5px 10px; border:1px solid var(--line); border-radius:4px;
+               background:var(--surface); color:var(--ink); cursor:pointer; }
+button.dlcsv:hover { background:#f4f3f0; }
+#lightbox { position:fixed; inset:0; background:rgba(11,11,11,0.55); display:flex;
+            align-items:center; justify-content:center; z-index:10; }
+#lightbox[hidden] { display:none; }
+.lb-inner { background:var(--surface); border-radius:6px; padding:10px 10px 6px;
+            max-width:min(96vw, 1000px); box-shadow:0 8px 40px rgba(11,11,11,0.35); }
+.lb-inner img { display:block; max-width:100%; max-height:82vh; }
+.lb-cap { display:flex; justify-content:space-between; color:var(--muted);
+          font-size:11px; padding:6px 2px 2px; }
+.lb-cap a { color:var(--accent); }
 """
 
 _JS = """
@@ -89,36 +103,37 @@ document.querySelectorAll("table").forEach(table => {
   }));
 });
 
-// --- stackable filters: bare words AND col-op-value expressions ---
+// --- stackable filters: bare words AND col-op-value expressions,
+//     `-term` negates, quotes group phrases: -"real estate" excludes REITs ---
 const OPS = [">=", "<=", ">", "<", "="];
 function parseQuery(q) {
-  const terms = q.trim().toLowerCase().split(/\\s+/).filter(Boolean);
-  return terms.map(t => {
+  const tokens = q.toLowerCase().match(/-?"[^"]*"|\\S+/g) || [];
+  return tokens.map(tok => {
+    const neg = tok.startsWith("-") && tok.length > 1;
+    let t = neg ? tok.slice(1) : tok;
+    t = t.replace(/^"|"$/g, "");
+    if (!t) return null;
     for (const op of OPS) {
       const i = t.indexOf(op);
-      if (i > 0) return { key: t.slice(0, i), op, val: t.slice(i + op.length) };
+      if (i > 0) return { neg, key: t.slice(0, i), op, val: t.slice(i + op.length) };
     }
-    return { text: t };
-  });
+    return { neg, text: t };
+  }).filter(Boolean);
+}
+function termMatches(row, hs, t) {
+  if (t.text !== undefined) return row.textContent.toLowerCase().includes(t.text);
+  const hi = hs.findIndex(h => h.key === t.key);
+  if (hi < 0) return false;
+  const cell = row.cells[hi];
+  const raw = cell.dataset.v ?? cell.textContent;
+  let a, b;
+  if (hs[hi].type === "grade") { a = -gradeRank(raw.toUpperCase()); b = -gradeRank(t.val.toUpperCase()); }
+  else { a = parseFloat(raw); b = parseFloat(t.val); }
+  if (isNaN(a) || isNaN(b)) return false;
+  return { ">=": a >= b, "<=": a <= b, ">": a > b, "<": a < b, "=": a === b }[t.op];
 }
 function rowPasses(row, hs, terms) {
-  for (const t of terms) {
-    if (t.text !== undefined) {
-      if (!row.textContent.toLowerCase().includes(t.text)) return false;
-      continue;
-    }
-    const hi = hs.findIndex(h => h.key === t.key);
-    if (hi < 0) return false;
-    const cell = row.cells[hi];
-    const raw = cell.dataset.v ?? cell.textContent;
-    let a, b;
-    if (hs[hi].type === "grade") { a = -gradeRank(raw.toUpperCase()); b = -gradeRank(t.val.toUpperCase()); }
-    else { a = parseFloat(raw); b = parseFloat(t.val); }
-    if (isNaN(a) || isNaN(b)) return false;
-    const ok = { ">=": a >= b, "<=": a <= b, ">": a > b, "<": a < b, "=": a === b }[t.op];
-    if (!ok) return false;
-  }
-  return true;
+  return terms.every(t => t.neg ? !termMatches(row, hs, t) : termMatches(row, hs, t));
 }
 const box = document.querySelector("input.filter");
 if (box) {
@@ -148,6 +163,75 @@ if (box) {
   box.addEventListener("input", apply);
   window.addEventListener("hashchange", fromUrl);
   fromUrl();
+}
+
+// --- chart lightbox: click a symbol -> floating popup; arrow keys walk
+//     the visible (filtered/sorted) listing; plain links are the no-JS fallback ---
+const lb = document.getElementById("lightbox");
+if (lb) {
+  const img = lb.querySelector("img");
+  const capSym = lb.querySelector(".lb-sym");
+  const capLink = lb.querySelector(".lb-link");
+  let current = null;
+
+  const chartLinks = () =>
+    [...document.querySelectorAll("tbody tr")]
+      .filter(r => r.style.display !== "none")
+      .map(r => r.querySelector('a[href^="charts/"]'))
+      .filter(Boolean);
+
+  function show(link) {
+    current = link;
+    img.src = link.getAttribute("href");
+    const sym = link.textContent.trim();
+    capSym.textContent = sym;
+    capLink.href = link.getAttribute("href");
+    lb.hidden = false;
+    const links = chartLinks();
+    const i = links.indexOf(link);
+    for (const n of [links[i - 1], links[i + 1]])
+      if (n) new Image().src = n.getAttribute("href"); // preload neighbors
+  }
+  function step(delta) {
+    const links = chartLinks();
+    const i = links.indexOf(current);
+    if (i < 0) return;
+    const next = links[i + delta];
+    if (next) show(next);
+  }
+  document.addEventListener("click", e => {
+    const a = e.target.closest('a[href^="charts/"]');
+    if (a && !e.metaKey && !e.ctrlKey) { e.preventDefault(); show(a); }
+    else if (!lb.hidden && !e.target.closest(".lb-inner")) lb.hidden = true;
+  });
+  document.addEventListener("keydown", e => {
+    if (lb.hidden) return;
+    if (e.key === "Escape") lb.hidden = true;
+    else if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); step(1); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); step(-1); }
+  });
+}
+
+// --- download the current (filtered, sorted) view as CSV ---
+const dl = document.querySelector("button.dlcsv");
+if (dl) {
+  dl.addEventListener("click", () => {
+    const table = document.querySelector("table");
+    const esc = s => '"' + String(s).replaceAll('"', '""') + '"';
+    const head = [...table.tHead.rows[0].cells].map(c => esc(c.textContent.trim()));
+    const lines = [head.join(",")];
+    for (const row of table.tBodies[0].rows) {
+      if (row.style.display === "none") continue;
+      lines.push([...row.cells].map(c =>
+        esc((c.dataset.v ?? c.textContent).replace(/\\s*NEW$/, "").trim())).join(","));
+    }
+    const blob = new Blob([lines.join("\\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = dl.dataset.filename || "table.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
 }
 """
 
@@ -182,6 +266,12 @@ def _fmt(val, kind="num", cls=""):
         return f'<td{c} data-v="{int(val)}">{int(val)}</td>'
     if kind == "cap999":
         v = max(min(val, 999), -999)
+        if abs(v) >= 999:
+            tip = ("IBD convention: turned profitable (growth off a non-positive base "
+                   "is not a meaningful %), or real growth beyond 999%"
+                   if v > 0 else
+                   "IBD convention: still unprofitable in the latest period")
+            return f'<td class="t999" data-v="{v:.0f}" title="{tip}">{v:.0f}</td>'
         return f'<td{c} data-v="{v:.0f}">{v:.0f}</td>'
     return f'<td{c} data-v="{val:.2f}">{val:,.2f}</td>'
 
@@ -249,15 +339,25 @@ FILTER_UI = (
     '<input class="filter" placeholder="filter: e.g.  semiconductor rs>=90 ad>=B-"'
     ' spellcheck="false"><span class="count"></span>'
     '<p class="hint">bare words match symbol/name/industry &middot; col&gt;=value filters numerically'
-    " (keys: rs, eps, epsrs, ad, price, grp&hellip;) &middot; expressions stack with AND"
+    " (keys: rs, eps, epsrs, ad, price, grp&hellip;) &middot; -term excludes"
+    ' (quote phrases: -&quot;real estate&quot; drops REITs) &middot; expressions stack with AND'
     " &middot; click headers to sort &middot; the query lives in the URL, bookmark it</p>"
 )
 
-FOOTNOTE_999 = (
-    '<p class="hint">EPS%/Sales% of 999 follows IBD&rsquo;s convention: either the company '
-    "turned profitable (growth off a non-positive base isn&rsquo;t a meaningful percentage) "
-    "or growth genuinely exceeds 999%. &minus;999 = still unprofitable.</p>"
+LIGHTBOX = (
+    '<div id="lightbox" hidden><div class="lb-inner"><img alt="weekly chart">'
+    '<div class="lb-cap"><span class="lb-sym"></span>'
+    '<span>&larr; &rarr; navigate &middot; esc closes &middot; '
+    '<a class="lb-link" href="#">open PNG</a></span></div></div></div>'
 )
+
+
+def csv_button(filename: str, raw_href: str) -> str:
+    return (
+        f'<div class="foot-actions"><button class="dlcsv" data-filename="{filename}">'
+        "download CSV (current view)</button>"
+        f' &middot; <a href="{raw_href}">raw CSV</a></div>'
+    )
 
 
 def _page(title: str, body: str) -> str:
@@ -300,8 +400,9 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
         + f'<div class="tbl"><table>{_thead(SCREEN_COLS)}<tbody>\n'
         + _screen_rows(screen, debuts)
         + "\n</tbody></table></div>"
-        + FOOTNOTE_999
+        + csv_button(f"open8585_{run_date}.csv", f"data/screen_{run_date}.csv")
         + f'<p class="disclaimer">{DISCLAIMER}</p>'
+        + LIGHTBOX
     )
     (site_dir / "index.html").write_text(_page("The open 85-85 list", body))
 
@@ -314,6 +415,7 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
         + f'<div class="tbl"><table>{_thead(RATINGS_COLS)}<tbody>\n'
         + _ratings_rows(rsorted)
         + "\n</tbody></table></div>"
+        + csv_button(f"ratings_{run_date}.csv", f"data/ratings_{run_date}.csv")
         + f'<p class="disclaimer">{DISCLAIMER}</p>'
     )
     (site_dir / "ratings.html").write_text(_page("Full ratings — open 85-85", rbody))
