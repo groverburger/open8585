@@ -154,13 +154,23 @@ Deepvue data-quality finding: CHAI/FRGT/ROLR/BLSH passed their "within
   1M-dominated weights demote it, which would put GDDY ~65 not 24) and
   vol-adjusted variants (slope t-stat, Clenow, return/vol — all crush
   GDDY to 1-11).
-- LEADING HYPOTHESIS (open): the quoted Deepvue "RS 89/87" for ALAB/CRDO
-  matches our 1-MONTH percentiles exactly (88/87) while GDDY's 24 matches
-  the classic 12M construction (23) — the quoted values were likely
-  different timeframe fields (Deepvue exposes RS 1M/3M/6M/12M). Awaiting
-  the full per-timeframe panel; prediction card in the session notes
-  (STFS/RTB/SEZL and SLGL/KOD/LITE have 40-90 point 1M-vs-12M spreads and
-  will pin their construction decisively).
+- RESOLVED by the full timeframe panel (9 names x 4 windows): Deepvue's
+  1M/3M/6M ratings roughly track ordinary window-return percentiles
+  (+-day-of-data drift), and their 12M is a recency-weighted composite in
+  the classic family (fresh gainer STFS with a bottom-quartile 12-month
+  return still rates 89; stale gainer LITE also 89 — the classic 40%%-
+  recent-quarter balance, same as ours which rates both 98-99). BUT their
+  12M is COMPRESSED AT THE TOP: eight elite-momentum names spanning our
+  ranks 47-189 (ratings 96-99, IBD-confirmed 98-99 where labeled) all
+  read 87-92 on Deepvue, six of them exactly 89. Implied mechanism:
+  either an "everything" pool ~2x listed stocks (a consistent ~1,050
+  instruments above every leader) or a deliberately flattened top-of-
+  scale mapping — not separable from 9 points, same practical effect.
+  Spearman of their 12M vs the classic ordering among these names: 0.60.
+  Verdict on "Deepvue keeps the original formula": false at the top of
+  the scale, where CANSLIM lives — the original formula reproduces
+  current IBD to +-1 point; Deepvue reads 8-11 points cooler, so
+  IBD-calibrated cutoffs (RS>84) silently exclude names IBD rates 90-95.
 
 ## Known gaps / next ideas
 
