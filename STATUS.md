@@ -136,6 +136,32 @@ Deepvue data-quality finding: CHAI/FRGT/ROLR/BLSH passed their "within
 15% of 52-wk high" filter while 67-97% below adjusted 52-wk closing highs
 (reverse-split artifacts on their side).
 
+**Deepvue reverse-engineering (2026-07-10, preregistered tests)**
+
+- H2 CONFIRMED (their data mishandles reverse splits): NASDAQ's official
+  52-wk highs agree with ours — CHAI -96%, FRGT -93% (1:100 cumulative
+  reverse splits), ROLR -82%, BLSH -79% off high — yet all four passed
+  Deepvue's "<15% off 52-wk high" screen filter. Control (GDDY) matches
+  the exchange to pennies on our side.
+- H3 SUPPORTED (their A/D is a close-location/money-flow variant): the
+  CLV formula we discarded (+0.06 rank corr vs IBD grades) reproduces
+  Deepvue's three A/D grades within ~1 notch, including "accumulation"
+  through CRDO's -11.2% on 4.5x volume. IBD's C- sides with our D+.
+- H1 REFUTED (ETFs in the RS pool): only 19 of 4,933 ETFs outrank ALAB's
+  weighted composite; adding the full ETF universe moves ALAB UP (99) and
+  GDDY DOWN (16) — the opposite signature. Also refuted: all monotone
+  window weightings (ALAB >=98th pctile in every window >1mo, so only
+  1M-dominated weights demote it, which would put GDDY ~65 not 24) and
+  vol-adjusted variants (slope t-stat, Clenow, return/vol — all crush
+  GDDY to 1-11).
+- LEADING HYPOTHESIS (open): the quoted Deepvue "RS 89/87" for ALAB/CRDO
+  matches our 1-MONTH percentiles exactly (88/87) while GDDY's 24 matches
+  the classic 12M construction (23) — the quoted values were likely
+  different timeframe fields (Deepvue exposes RS 1M/3M/6M/12M). Awaiting
+  the full per-timeframe panel; prediction card in the session notes
+  (STFS/RTB/SEZL and SLGL/KOD/LITE have 40-90 point 1M-vs-12M spreads and
+  will pin their construction decisively).
+
 ## Known gaps / next ideas
 
 - **85-85 index** (from the lecture): price-weighted index of list
