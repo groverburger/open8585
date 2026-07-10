@@ -106,6 +106,9 @@ def run_screen(cfg: ScreenConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     fmetrics = pd.DataFrame([fnd.eps_metrics(r) for r in records.values()])
     fmetrics["eps_rating"] = fnd.eps_rating_vs_reference(fmetrics, ref_syms & set(fmetrics["symbol"]))
+    # attach EPS metrics to the full rated universe too — in full-universe
+    # mode this makes the published ratings table complete
+    rated = rated.merge(fmetrics.drop(columns=["eps_source"]), on="symbol", how="left")
 
     print("[6/6] final EPS filter")
     screen = survivors.merge(fmetrics, on="symbol", how="left")

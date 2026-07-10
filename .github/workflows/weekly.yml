@@ -39,7 +39,7 @@ jobs:
           restore-keys: canslim-data-
 
       - name: Run screen and build site
-        run: python scripts/publish.py --site-page site-page/index.html
+        run: python scripts/publish.py
 
       - name: Commit weekly archive to master
         run: |
@@ -58,23 +58,3 @@ jobs:
           git add -A
           git commit -q -m "Site build $(date -u +%F)"
           git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" site
-
-      - name: Update groverburger.xyz project page
-        if: ${{ secrets.SITE_DEPLOY_KEY != '' }}
-        env:
-          SITE_DEPLOY_KEY: ${{ secrets.SITE_DEPLOY_KEY }}
-        run: |
-          eval "$(ssh-agent -s)"
-          ssh-add - <<< "$SITE_DEPLOY_KEY"
-          mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
-          git clone -q --depth 1 git@github.com:groverburger/groverburger.xyz.git sitework
-          mkdir -p sitework/projects/canslim-8585
-          cp site-page/index.html sitework/projects/canslim-8585/index.html
-          cd sitework
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add projects/canslim-8585/
-          git diff --cached --quiet || {
-            git commit -m "Update open 85-85 list ($(date -u +%F))"
-            git push
-          }

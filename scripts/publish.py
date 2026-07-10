@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Weekly publish pipeline: run the screen, render charts, build the static
-site artifacts, and (optionally) regenerate the groverburger.xyz project page.
+"""Weekly publish pipeline: run the screen, render charts, and build the
+static site artifacts for the GitHub Pages `site` branch.
 
 Outputs:
-  site/            index.html, ratings.html, charts/*.png, data/*.csv
-  archive/         one screen CSV per run (committed to master; also the
-                   dataset for the debut backtest and week-over-week diffs)
-  --site-page P    write the self-contained groverburger.xyz page to P
+  site/       index.html, ratings.html, charts/*.png, fonts/, data/*.csv
+  archive/    one screen CSV per run (committed to master; also the
+              dataset for the debut backtest and week-over-week diffs)
 
 Usage:
   python3 scripts/publish.py                       # full run
@@ -66,15 +65,19 @@ def street_eps_backfill(symbols: list[str], data_dir: Path, budget_minutes: floa
     print(f"[backfill] attempted {done}, filled {filled}")
 
 
-def compute_index(prices: pd.DataFrame, members: list[str]) -> pd.Series:
-    """Price-weighted index of current list members (Dow-style: sum of
-    member closes, scaled to 100 a year ago). Uses current membership over
-    the trailing window, so it's an approximation of IBD's weekly-
-    reconstituted index — documented as such."""
-    wide = prices[prices["symbol"].isin(members)].pivot(index="date", columns="symbol", values="close")
-    wide = wide.tail(260).dropna(axis=1)
-    idx = wide.sum(axis=1)
-    return idx / idx.iloc[0] * 100
+def eps_ttm_series(symbol: str, data_dir: Path) -> pd.Series | None:
+    """Trailing-twelve-month EPS by report date, from cached fundamentals."""
+    p = data_dir / "fundamentals" / f"{symbol}.json"
+    if not p.exists():
+        return None
+    rec = json.loads(p.read_text())
+    records = rec.get("reported_eps") or rec.get("q_eps") or []
+    if len(records) < 4:
+        return None
+    dates = [pd.Timestamp(d) for d, _ in records]
+    vals = [v for _, v in records]
+    ttm = [sum(vals[i - 3: i + 1]) for i in range(3, len(vals))]
+    return pd.Series(ttm, index=dates[3:])
 
 
 def main() -> None:
@@ -82,8 +85,6 @@ def main() -> None:
     ap.add_argument("--data-dir", type=Path, default=ROOT / "data")
     ap.add_argument("--site-dir", type=Path, default=ROOT / "site")
     ap.add_argument("--archive-dir", type=Path, default=ROOT / "archive")
-    ap.add_argument("--site-page", type=Path, default=None,
-                    help="also write the groverburger.xyz project page here")
     ap.add_argument("--backfill-minutes", type=float, default=20)
     ap.add_argument("--skip-backfill", action="store_true")
     ap.add_argument("--max-charts", type=int, default=None, help="cap charts (testing)")
@@ -112,27 +113,20 @@ def main() -> None:
 
     print("[charts] rendering")
     prices = pd.read_parquet(args.data_dir / "prices.parquet")
-    index = compute_index(prices, screen["symbol"].tolist())
-    ma50 = index.rolling(50).mean()
-    gate_on = bool(index.iloc[-1] >= ma50.iloc[-1])
-    charts.render_index_chart(index, args.site_dir / "charts" / "_index.png")
-
     spx = charts.get_benchmark(args.data_dir / "benchmark.parquet")
     members = screen if args.max_charts is None else screen.head(args.max_charts)
     for _, row in members.iterrows():
         daily = (prices[prices["symbol"] == row["symbol"]]
                  .set_index("date").sort_index())
         charts.render_chart(row["symbol"], str(row.get("name", "")), daily, spx,
-                            args.site_dir / "charts" / f"{row['symbol']}.png")
-    print(f"[charts] {len(members)} member charts + index")
+                            args.site_dir / "charts" / f"{row['symbol']}.png",
+                            eps_ttm=eps_ttm_series(row["symbol"], args.data_dir))
+    print(f"[charts] {len(members)} member charts")
 
-    from canslim.site import build_groverburger_page, build_pages_site  # noqa: E402
-    build_pages_site(screen, rated, debuts, dropoffs, run_date, gate_on, args.site_dir)
-    if args.site_page:
-        args.site_page.parent.mkdir(parents=True, exist_ok=True)
-        args.site_page.write_text(build_groverburger_page(screen, debuts, run_date, gate_on))
-        print(f"[site] wrote {args.site_page}")
-    print(f"[done] gate {'ON' if gate_on else 'OFF'} · {len(screen)} stocks · site/ ready")
+    from canslim.site import build_pages_site  # noqa: E402
+    build_pages_site(screen, rated, debuts, dropoffs, run_date, args.site_dir,
+                     assets_dir=ROOT / "assets" / "fonts")
+    print(f"[done] {len(screen)} stocks · site/ ready")
 
 
 if __name__ == "__main__":

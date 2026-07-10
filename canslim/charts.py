@@ -1,9 +1,10 @@
 """Static weekly chart rendering for the published site.
 
-IBD-style weekly charts: high-low-close price bars (~2 years), 10- and
-40-week moving averages, a relative-strength line vs the S&P 500 in its
-own sub-panel (one scale per panel), and up/down-colored volume with its
-10-week average. Rendered to PNG with matplotlib.
+IBD-style weekly charts: high-low-close price bars (~2 years) with 10-
+and 40-week moving averages spanning the full window (the price download
+carries ~3 years so the 40-week line has runway), a TTM EPS step line, a
+relative-strength line vs the S&P 500 indexed to 100 at the window start,
+and up/down-colored volume. One scale per panel. Rendered to PNG.
 """
 
 from __future__ import annotations
@@ -14,11 +15,17 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.dates as mdates  # noqa: E402
+import matplotlib.font_manager as fm  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import yfinance as yf  # noqa: E402
+
+_ASSET_FONTS = Path(__file__).parent.parent / "assets" / "fonts"
+_FONT_FAMILY = "sans-serif"
+for _ttf in _ASSET_FONTS.glob("*.ttf") if _ASSET_FONTS.exists() else []:
+    fm.fontManager.addfont(str(_ttf))
+    _FONT_FAMILY = "Berkeley Mono"
 
 # Validated reference palette (dataviz skill); light mode.
 C = {
@@ -33,6 +40,7 @@ C = {
     "ma10": "#eda100",  # categorical slot 3 (direct-labeled: relief rule)
     "ma40": "#4a3aa7",  # categorical slot 5
     "rs": "#1baf7a",  # categorical slot 2 (own labeled panel)
+    "eps": "#eb6834",  # categorical slot 8 (own labeled panel)
 }
 
 WEEKS = 104
@@ -40,7 +48,7 @@ BENCH_CACHE_HOURS = 20
 
 plt.rcParams.update(
     {
-        "font.family": "sans-serif",
+        "font.family": _FONT_FAMILY,
         "font.size": 8.5,
         "axes.edgecolor": C["baseline"],
         "axes.linewidth": 0.8,
@@ -86,8 +94,10 @@ def _style_axis(ax):
         ax.spines[side].set_visible(False)
 
 
-def render_chart(symbol: str, name: str, daily: pd.DataFrame, spx: pd.Series, out_path: Path) -> None:
-    """Render one weekly chart PNG. `daily` is date-indexed OHLCV."""
+def render_chart(symbol: str, name: str, daily: pd.DataFrame, spx: pd.Series,
+                 out_path: Path, eps_ttm: pd.Series | None = None) -> None:
+    """Render one weekly chart PNG. `daily` is date-indexed OHLCV;
+    `eps_ttm` is trailing-twelve-month EPS indexed by report date."""
     wk_all = weekly_bars(daily)
     wk_all["ma10"] = wk_all["close"].rolling(10).mean()
     wk_all["ma40"] = wk_all["close"].rolling(40).mean()
@@ -100,14 +110,19 @@ def render_chart(symbol: str, name: str, daily: pd.DataFrame, spx: pd.Series, ou
 
     spx_wk = spx.resample("W-FRI").last().reindex(wk.index).ffill()
     rs = (wk["close"] / spx_wk).to_numpy()
+    rs = rs / rs[0] * 100  # indexed to 100 at the window start
 
-    fig = plt.figure(figsize=(8.6, 5.6), dpi=110)
+    has_eps = eps_ttm is not None and len(eps_ttm) >= 2
+
+    fig = plt.figure(figsize=(8.6, 6.0 if has_eps else 5.6), dpi=110)
     fig.patch.set_facecolor(C["surface"])
-    gs = fig.add_gridspec(3, 1, height_ratios=[5.2, 1.15, 1.5], hspace=0.07,
+    heights = [5.2, 1.0, 1.0, 1.4] if has_eps else [5.2, 1.15, 1.5]
+    gs = fig.add_gridspec(len(heights), 1, height_ratios=heights, hspace=0.07,
                           left=0.055, right=0.93, top=0.9, bottom=0.07)
     axp = fig.add_subplot(gs[0])
-    axr = fig.add_subplot(gs[1], sharex=axp)
-    axv = fig.add_subplot(gs[2], sharex=axp)
+    axe = fig.add_subplot(gs[1], sharex=axp) if has_eps else None
+    axr = fig.add_subplot(gs[2 if has_eps else 1], sharex=axp)
+    axv = fig.add_subplot(gs[3 if has_eps else 2], sharex=axp)
 
     # price panel: high-low bars with a close tick, log scale
     axp.vlines(x, wk["low"], wk["high"], colors=bar_colors, linewidth=1.0)
@@ -143,11 +158,40 @@ def render_chart(symbol: str, name: str, daily: pd.DataFrame, spx: pd.Series, ou
         edge_label(wk["ma40"].iloc[-1], "40w", C["ma40"])
     edge_label(hi52, "52w high", C["muted"])
 
-    # RS panel (own scale — never overlaid on price)
+    # EPS panel: trailing-twelve-month EPS as a step line, own $ scale
+    if axe is not None:
+        pos = wk.index.searchsorted(eps_ttm.index)
+        vals, xs = [], []
+        pre = eps_ttm[eps_ttm.index < wk.index[0]]
+        if len(pre):
+            xs.append(0)
+            vals.append(pre.iloc[-1])
+        for p, v in zip(pos, eps_ttm.to_numpy()):
+            if 0 <= p < len(wk):
+                xs.append(p)
+                vals.append(v)
+        if xs:
+            xs.append(len(wk) - 1)
+            vals.append(vals[-1])
+            axe.plot(xs, vals, color=C["eps"], linewidth=1.3, drawstyle="steps-post")
+            lo_e, hi_e = min(vals), max(vals)
+            pad = (hi_e - lo_e) * 0.25 or abs(hi_e) * 0.2 or 1
+            axe.set_ylim(lo_e - pad, hi_e + pad)
+        axe.text(0.005, 0.8, "EPS (ttm)", transform=axe.transAxes,
+                 color=C["ink2"], fontsize=7)
+        axe.yaxis.set_major_locator(plt.MaxNLocator(3, prune="both"))
+        axe.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.2f}"))
+        axe.tick_params(labelsize=6.5)
+        _style_axis(axe)
+        plt.setp(axe.get_xticklabels(), visible=False)
+
+    # RS panel (own scale, indexed to 100 at window start)
     axr.plot(x, rs, color=C["rs"], linewidth=1.3)
-    axr.text(0.005, 0.82, "RS line (vs S&P 500)", transform=axr.transAxes,
+    axr.text(0.005, 0.8, "RS line (vs S&P 500, start=100)", transform=axr.transAxes,
              color=C["ink2"], fontsize=7)
-    axr.set_yticks([])
+    axr.yaxis.set_major_locator(plt.MaxNLocator(3, prune="both"))
+    axr.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0f}"))
+    axr.tick_params(labelsize=6.5)
     _style_axis(axr)
     plt.setp(axr.get_xticklabels(), visible=False)
 
@@ -174,27 +218,6 @@ def render_chart(symbol: str, name: str, daily: pd.DataFrame, spx: pd.Series, ou
              color=C["ink"])
     fig.text(0.93, 0.912, "weekly · 2y · log scale", fontsize=7.5, ha="right", color=C["muted"])
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path, facecolor=C["surface"])
-    plt.close(fig)
-
-
-def render_index_chart(index: pd.Series, out_path: Path) -> None:
-    """The 85-85 index (price-weighted, current members) with its 50-day MA."""
-    ma50 = index.rolling(50).mean()
-    fig, ax = plt.subplots(figsize=(8.6, 2.6), dpi=110)
-    fig.patch.set_facecolor(C["surface"])
-    ax.plot(index.index, index, color=C["up"], linewidth=1.4)
-    ax.plot(ma50.index, ma50, color=C["ma10"], linewidth=1.2)
-    ax.annotate("50d", (ma50.index[-1], ma50.iloc[-1]), xytext=(6, 0),
-                textcoords="offset points", color=C["ma10"], fontsize=7.5,
-                va="center", fontweight="bold", annotation_clip=False)
-    ax.annotate("index", (index.index[-1], index.iloc[-1]), xytext=(6, 0),
-                textcoords="offset points", color=C["up"], fontsize=7.5,
-                va="center", fontweight="bold", annotation_clip=False)
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %y"))
-    _style_axis(ax)
-    fig.subplots_adjust(left=0.055, right=0.9, top=0.92, bottom=0.16)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, facecolor=C["surface"])
     plt.close(fig)

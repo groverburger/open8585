@@ -1,10 +1,13 @@
-"""Static-site generation: the weekly list page, the full-universe ratings
-spreadsheet, and the project page for groverburger.xyz.
+"""Static-site generation: the weekly list page and the full-universe
+ratings spreadsheet, published to the repo's GitHub Pages (`site` branch).
 
-The canslim-8585 GitHub Pages site (force-pushed `site` branch) hosts the
-heavy artifacts — per-stock charts and the full sortable ratings table.
-The groverburger.xyz page is a small self-contained HTML file regenerated
-weekly and committed to the site repo (which deploys via GitHub Pages).
+Tables are set in Berkeley Mono with tabular figures. The filter box
+accepts stackable expressions ANDed together, e.g.:
+
+    semiconductor rs>=90 eps>=85 ad>=B-
+
+Bare words text-match symbol/name/industry; `col>=value` (also >, <=, <,
+=) compares numeric columns; A/D grades compare on the A+..E- scale.
 """
 
 from __future__ import annotations
@@ -14,7 +17,6 @@ from pathlib import Path
 
 import pandas as pd
 
-PAGES_BASE = "https://groverburger.github.io/canslim-8585"
 REPO_URL = "https://github.com/groverburger/canslim-8585"
 
 DISCLAIMER = (
@@ -23,80 +25,180 @@ DISCLAIMER = (
     "Investor's Business Daily or William O'Neil + Co."
 )
 
-_BASE_CSS = """
+_CSS = """
+@font-face { font-family:"Berkeley Mono"; src:url("fonts/BerkeleyMono-Regular.woff2") format("woff2");
+             font-weight:400; font-display:swap; }
+@font-face { font-family:"Berkeley Mono"; src:url("fonts/BerkeleyMono-Bold.woff2") format("woff2");
+             font-weight:700; font-display:swap; }
 :root { --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --line:#e1e0d9;
-        --surface:#fcfcfb; --up:#2a78d6; --down:#e34948; }
+        --surface:#fcfcfb; --accent:#2a78d6; --down:#a83232; --up-t:#006300; }
 * { box-sizing:border-box; }
-body { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink);
-       background:var(--surface); margin:0 auto; max-width:1080px; padding:24px 16px; }
-h1 { font-size:1.5rem; margin:0 0 4px; } h2 { font-size:1.1rem; margin:28px 0 8px; }
-p { color:var(--ink2); line-height:1.5; } a { color:var(--up); }
-.meta { color:var(--muted); font-size:0.85rem; }
-.gate { display:inline-block; padding:4px 10px; border-radius:6px; font-weight:700;
-        font-size:0.9rem; margin:8px 0; }
-.gate.on  { background:#e7f0fb; color:#1c5cab; }
-.gate.off { background:#fbeaea; color:#a83232; }
-table { border-collapse:collapse; width:100%; font-size:0.85rem; }
-th,td { padding:5px 8px; text-align:right; border-bottom:1px solid var(--line);
+body { font-family:"Berkeley Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+       color:var(--ink); background:var(--surface); margin:0; padding:18px 20px;
+       font-size:13px; }
+h1 { font-size:17px; margin:0 0 2px; }
+p { color:var(--ink2); line-height:1.45; max-width:88ch; margin:6px 0; }
+a { color:var(--accent); }
+.meta { color:var(--muted); font-size:12px; }
+input.filter { font:inherit; padding:5px 9px; margin:10px 0 6px; width:min(560px,100%);
+               border:1px solid var(--line); border-radius:4px;
+               background:var(--surface); color:var(--ink); }
+.hint { color:var(--muted); font-size:11px; margin:0 0 8px; }
+.count { color:var(--ink2); font-size:12px; margin-left:8px; }
+.tbl { overflow-x:auto; }
+table { border-collapse:collapse; font-variant-numeric:tabular-nums; }
+th,td { padding:3px 9px; text-align:right; border-bottom:1px solid var(--line);
         white-space:nowrap; }
-th { color:var(--ink2); position:sticky; top:0; background:var(--surface); cursor:pointer; }
-td:nth-child(-n+3), th:nth-child(-n+3) { text-align:left; }
+th { color:var(--ink2); font-weight:700; position:sticky; top:0;
+     background:var(--surface); cursor:pointer; user-select:none; }
+th:after { content:""; }
+th.asc:after { content:" \\2191"; } th.desc:after { content:" \\2193"; }
+td.l, th.l { text-align:left; }
 tr:hover td { background:#f4f3f0; }
-.new { color:#006300; font-weight:700; font-size:0.75rem; }
-.pos { color:#006300; } .neg { color:#a83232; }
-.disclaimer { color:var(--muted); font-size:0.78rem; margin-top:32px; }
-input.filter { padding:6px 10px; margin:8px 0; width:260px; border:1px solid var(--line);
-               border-radius:6px; background:var(--surface); color:var(--ink);
-               font-size:0.9rem; }
-img.chart { max-width:100%; height:auto; border:1px solid var(--line); border-radius:6px; }
+.new { color:var(--up-t); font-weight:700; font-size:11px; }
+.pos { color:var(--up-t); } .neg { color:var(--down); }
+.disclaimer { color:var(--muted); font-size:11px; margin-top:28px; max-width:88ch; }
 """
 
-_SORT_JS = """
-document.querySelectorAll("th").forEach((th, i) => th.addEventListener("click", () => {
-  const tb = th.closest("table").tBodies[0];
-  const dir = th.dataset.dir = th.dataset.dir === "asc" ? "desc" : "asc";
-  const rows = [...tb.rows].sort((a, b) => {
-    const [x, y] = [a.cells[i].dataset.v ?? a.cells[i].textContent,
-                    b.cells[i].dataset.v ?? b.cells[i].textContent];
-    const [nx, ny] = [parseFloat(x), parseFloat(y)];
-    const cmp = (!isNaN(nx) && !isNaN(ny)) ? nx - ny : String(x).localeCompare(String(y));
-    return dir === "asc" ? cmp : -cmp;
-  });
-  rows.forEach(r => tb.appendChild(r));
-}));
-const box = document.querySelector("input.filter");
-if (box) box.addEventListener("input", () => {
-  const q = box.value.toLowerCase();
-  document.querySelectorAll("tbody tr").forEach(r =>
-    r.style.display = r.textContent.toLowerCase().includes(q) ? "" : "none");
+_JS = """
+const SCALE = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","D-","E+","E","E-"];
+const gradeRank = g => { const i = SCALE.indexOf(g); return i < 0 ? 99 : i; };
+
+function headers(table) {
+  return [...table.tHead.rows[0].cells].map(th => ({
+    key: th.dataset.key, type: th.dataset.type || "text", el: th }));
+}
+
+// --- sorting ---
+document.querySelectorAll("table").forEach(table => {
+  const hs = headers(table);
+  hs.forEach((h, i) => h.el.addEventListener("click", () => {
+    const dir = h.el.classList.contains("asc") ? "desc" : "asc";
+    hs.forEach(x => x.el.classList.remove("asc", "desc"));
+    h.el.classList.add(dir);
+    const rows = [...table.tBodies[0].rows].sort((a, b) => {
+      let x = a.cells[i].dataset.v ?? a.cells[i].textContent;
+      let y = b.cells[i].dataset.v ?? b.cells[i].textContent;
+      let cmp;
+      if (h.type === "grade") cmp = gradeRank(y) - gradeRank(x);
+      else if (h.type === "num") cmp = (parseFloat(x) || -1e12) - (parseFloat(y) || -1e12);
+      else cmp = String(x).localeCompare(String(y));
+      return dir === "asc" ? cmp : -cmp;
+    });
+    rows.forEach(r => table.tBodies[0].appendChild(r));
+  }));
 });
+
+// --- stackable filters: bare words AND col-op-value expressions ---
+const OPS = [">=", "<=", ">", "<", "="];
+function parseQuery(q) {
+  const terms = q.trim().toLowerCase().split(/\\s+/).filter(Boolean);
+  return terms.map(t => {
+    for (const op of OPS) {
+      const i = t.indexOf(op);
+      if (i > 0) return { key: t.slice(0, i), op, val: t.slice(i + op.length) };
+    }
+    return { text: t };
+  });
+}
+function rowPasses(row, hs, terms) {
+  for (const t of terms) {
+    if (t.text !== undefined) {
+      if (!row.textContent.toLowerCase().includes(t.text)) return false;
+      continue;
+    }
+    const hi = hs.findIndex(h => h.key === t.key);
+    if (hi < 0) return false;
+    const cell = row.cells[hi];
+    const raw = cell.dataset.v ?? cell.textContent;
+    let a, b;
+    if (hs[hi].type === "grade") { a = -gradeRank(raw.toUpperCase()); b = -gradeRank(t.val.toUpperCase()); }
+    else { a = parseFloat(raw); b = parseFloat(t.val); }
+    if (isNaN(a) || isNaN(b)) return false;
+    const ok = { ">=": a >= b, "<=": a <= b, ">": a > b, "<": a < b, "=": a === b }[t.op];
+    if (!ok) return false;
+  }
+  return true;
+}
+const box = document.querySelector("input.filter");
+if (box) {
+  const table = document.querySelector("table");
+  const hs = headers(table);
+  const count = document.querySelector(".count");
+  const apply = () => {
+    const terms = parseQuery(box.value);
+    let shown = 0;
+    for (const row of table.tBodies[0].rows) {
+      const ok = rowPasses(row, hs, terms);
+      row.style.display = ok ? "" : "none";
+      if (ok) shown++;
+    }
+    if (count) count.textContent = shown + " shown";
+  };
+  box.addEventListener("input", apply);
+  apply();
+}
 """
 
+# (header label, filter key, type, css class)
+SCREEN_COLS = [
+    ("Symbol", "symbol", "text", "l"), ("Company", "name", "text", "l"),
+    ("Industry Group", "industry", "text", "l"), ("Grp", "grp", "num", ""),
+    ("Price", "price", "num", ""), ("Chg%", "chg", "num", ""),
+    ("Vol%", "volchg", "num", ""), ("EPS%", "epschg", "num", ""),
+    ("Sales%", "saleschg", "num", ""), ("RS", "rs", "num", ""),
+    ("EPS", "eps", "num", ""), ("EPS+RS", "epsrs", "num", ""),
+    ("A/D", "ad", "grade", ""),
+]
 
-def _fmt(val, kind="num"):
-    if pd.isna(val):
-        return "<td>–</td>"
+RATINGS_COLS = [
+    ("Symbol", "symbol", "text", "l"), ("Company", "name", "text", "l"),
+    ("Industry", "industry", "text", "l"), ("Price", "price", "num", ""),
+    ("OffHi%", "offhigh", "num", ""), ("RS", "rs", "num", ""),
+    ("EPS", "eps", "num", ""), ("EPS+RS", "epsrs", "num", ""),
+    ("A/D", "ad", "grade", ""), ("Grp", "grp", "num", ""),
+]
+
+
+def _fmt(val, kind="num", cls=""):
+    c = f' class="{cls}"' if cls else ""
+    if val is None or pd.isna(val):
+        return f"<td{c}>–</td>"
     if kind == "chg":
-        cls = "pos" if val >= 0 else "neg"
-        return f'<td class="{cls}" data-v="{val:.2f}">{val:+.1f}</td>'
+        cls2 = ("pos" if val >= 0 else "neg") + (f" {cls}" if cls else "")
+        return f'<td class="{cls2}" data-v="{val:.2f}">{val:+.1f}</td>'
     if kind == "int":
-        return f'<td data-v="{int(val)}">{int(val)}</td>'
+        return f'<td{c} data-v="{int(val)}">{int(val)}</td>'
     if kind == "cap999":
         v = max(min(val, 999), -999)
-        return f'<td data-v="{v:.0f}">{v:.0f}</td>'
-    return f'<td data-v="{val:.2f}">{val:,.2f}</td>'
+        return f'<td{c} data-v="{v:.0f}">{v:.0f}</td>'
+    return f'<td{c} data-v="{val:.2f}">{val:,.2f}</td>'
 
 
-def _screen_rows(screen: pd.DataFrame, debuts: set[str], chart_base: str) -> str:
+def _thead(cols) -> str:
+    ths = "".join(
+        f'<th class="{cls}" data-key="{key}" data-type="{typ}">{label}</th>'
+        for label, key, typ, cls in cols
+    )
+    return f"<thead><tr>{ths}</tr></thead>"
+
+
+def _eps_rs(row):
+    eps, rs = row.get("eps_rating"), row.get("rs_rating")
+    if pd.isna(eps) or pd.isna(rs):
+        return float("nan")
+    return int(eps) + int(rs)
+
+
+def _screen_rows(screen: pd.DataFrame, debuts: set[str]) -> str:
     rows = []
     for _, r in screen.iterrows():
         star = ' <span class="new">NEW</span>' if r["symbol"] in debuts else ""
-        name = html.escape(str(r.get("name", ""))[:40])
-        industry = html.escape(str(r.get("industry", ""))[:38])
         rows.append(
             "<tr>"
-            f'<td data-v="{r["symbol"]}"><a href="{chart_base}/{r["symbol"]}.png">{r["symbol"]}</a>{star}</td>'
-            f"<td>{name}</td><td>{industry}</td>"
+            f'<td class="l" data-v="{r["symbol"]}"><a href="charts/{r["symbol"]}.png">{r["symbol"]}</a>{star}</td>'
+            f'<td class="l">{html.escape(str(r.get("name", ""))[:36])}</td>'
+            f'<td class="l">{html.escape(str(r.get("industry", ""))[:34])}</td>'
             + _fmt(r.get("industry_rank"), "int")
             + _fmt(r.get("price"))
             + _fmt(r.get("price_day_chg"), "chg")
@@ -105,84 +207,94 @@ def _screen_rows(screen: pd.DataFrame, debuts: set[str], chart_base: str) -> str
             + _fmt(r.get("sales_growth"), "cap999")
             + _fmt(r.get("rs_rating"), "int")
             + _fmt(r.get("eps_rating"), "int")
+            + _fmt(_eps_rs(r), "int")
             + f'<td data-v="{r.get("ad_rating") or ""}">{r.get("ad_rating") or "–"}</td>'
             + "</tr>"
         )
     return "\n".join(rows)
 
 
-SCREEN_HEADERS = ("Symbol,Company,Industry Group,Grp Rank,Price,Price %Chg,Vol %Chg,"
-                  "EPS %Chg,Sales %Chg,RS,EPS,A/D").split(",")
+def _ratings_rows(rated: pd.DataFrame) -> str:
+    rows = []
+    for _, r in rated.iterrows():
+        rows.append(
+            "<tr>"
+            f'<td class="l" data-v="{r["symbol"]}">{r["symbol"]}</td>'
+            f'<td class="l">{html.escape(str(r.get("name", ""))[:36])}</td>'
+            f'<td class="l">{html.escape(str(r.get("industry", ""))[:34])}</td>'
+            + _fmt(r.get("price"))
+            + _fmt(r.get("pct_off_high"), "chg")
+            + _fmt(r.get("rs_rating"), "int")
+            + _fmt(r.get("eps_rating"), "int")
+            + _fmt(_eps_rs(r), "int")
+            + f'<td data-v="{r.get("ad_rating") or ""}">{r.get("ad_rating") or "–"}</td>'
+            + _fmt(r.get("industry_rank"), "int")
+            + "</tr>"
+        )
+    return "\n".join(rows)
 
 
-def _table(headers: list[str], body: str) -> str:
-    head = "".join(f"<th>{h}</th>" for h in headers)
-    return f"<table><thead><tr>{head}</tr></thead><tbody>\n{body}\n</tbody></table>"
+FILTER_UI = (
+    '<input class="filter" placeholder="filter: e.g.  semiconductor rs>=90 ad>=B-"'
+    ' spellcheck="false"><span class="count"></span>'
+    '<p class="hint">bare words match symbol/name/industry &middot; col&gt;=value filters numerically'
+    " (keys: rs, eps, epsrs, ad, price, grp&hellip;) &middot; expressions stack with AND"
+    " &middot; click headers to sort</p>"
+)
 
 
 def _page(title: str, body: str) -> str:
     return (
         "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        f"<title>{html.escape(title)}</title>\n<style>{_BASE_CSS}</style>\n</head>\n<body>\n"
-        f"{body}\n<script>{_SORT_JS}</script>\n</body>\n</html>\n"
+        f"<title>{html.escape(title)}</title>\n<style>{_CSS}</style>\n</head>\n<body>\n"
+        f"{body}\n<script>{_JS}</script>\n</body>\n</html>\n"
     )
 
 
-def gate_banner(gate_on: bool) -> str:
-    if gate_on:
-        return '<span class="gate on">85-85 index above its 50-day line — market gate ON</span>'
-    return '<span class="gate off">85-85 index below its 50-day line — market gate OFF</span>'
-
-
 def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str],
-                     dropoffs: set[str], run_date: str, gate_on: bool, site_dir: Path) -> None:
-    """index.html + ratings.html + data files for the canslim-8585 Pages branch."""
+                     dropoffs: set[str], run_date: str, site_dir: Path,
+                     assets_dir: Path | None = None) -> None:
     site_dir = Path(site_dir)
     (site_dir / "data").mkdir(parents=True, exist_ok=True)
 
+    if assets_dir and Path(assets_dir).exists():
+        import shutil
+        fonts_out = site_dir / "fonts"
+        fonts_out.mkdir(exist_ok=True)
+        for f in Path(assets_dir).glob("*.woff2"):
+            shutil.copy(f, fonts_out / f.name)
+
     drop_note = ""
     if dropoffs:
-        drop_note = ("<p class='meta'>Dropped since last week: "
+        drop_note = ("<p class='meta'>dropped since last week: "
                      + ", ".join(sorted(dropoffs)) + "</p>")
     body = (
-        f"<h1>The open 85-85 list</h1>"
-        f'<p class="meta">Computed {run_date} · {len(screen)} stocks · '
+        "<h1>The open 85-85 list</h1>"
+        f'<p class="meta">computed {run_date} · {len(screen)} stocks · '
         f'<a href="{REPO_URL}">methodology &amp; source</a> · '
         f'<a href="ratings.html">full ratings table</a></p>'
-        f"<p>Stocks with EPS and RS ratings of 85+ (percentile-ranked 1&ndash;99 against "
-        f"the full US stock universe), priced $10+, within 15% of their 52-week closing "
-        f"high, average volume 10,000+ shares. Click a symbol for its weekly chart.</p>"
-        + gate_banner(gate_on)
-        + f'<div><img class="chart" src="charts/_index.png" alt="85-85 index with 50-day moving average"></div>'
-        + drop_note
-        + _table(SCREEN_HEADERS, _screen_rows(screen, debuts, "charts"))
+        "<p>Stocks with EPS and RS ratings of 85+ (percentile-ranked 1&ndash;99 against "
+        "the full US stock universe), priced $10+, within 15% of their 52-week closing "
+        "high, average volume 10,000+ shares. NEW marks this week's debuts. "
+        "Symbols link to weekly charts.</p>"
+        + FILTER_UI + drop_note
+        + f'<div class="tbl"><table>{_thead(SCREEN_COLS)}<tbody>\n'
+        + _screen_rows(screen, debuts)
+        + "\n</tbody></table></div>"
         + f'<p class="disclaimer">{DISCLAIMER}</p>'
     )
     (site_dir / "index.html").write_text(_page("The open 85-85 list", body))
 
-    rcols = rated.dropna(subset=["rs_rating"]).sort_values("rs_rating", ascending=False)
-    rows = []
-    for _, r in rcols.iterrows():
-        rows.append(
-            "<tr>"
-            f'<td data-v="{r["symbol"]}">{r["symbol"]}</td>'
-            f'<td>{html.escape(str(r.get("name", ""))[:40])}</td>'
-            f'<td>{html.escape(str(r.get("industry", ""))[:38])}</td>'
-            + _fmt(r.get("price")) + _fmt(r.get("pct_off_high"), "chg")
-            + _fmt(r.get("rs_rating"), "int")
-            + (_fmt(r.get("eps_rating"), "int") if "eps_rating" in r and pd.notna(r.get("eps_rating")) else "<td>–</td>")
-            + f'<td data-v="{r.get("ad_rating") or ""}">{r.get("ad_rating") or "–"}</td>'
-            + _fmt(r.get("industry_rank"), "int")
-            + "</tr>"
-        )
+    rsorted = rated.dropna(subset=["rs_rating"]).sort_values("rs_rating", ascending=False)
     rbody = (
-        f"<h1>Full ratings table</h1>"
-        f'<p class="meta">Computed {run_date} · {len(rcols)} stocks · '
+        "<h1>Full ratings table</h1>"
+        f'<p class="meta">computed {run_date} · {len(rsorted)} stocks · '
         f'<a href="index.html">the 85-85 list</a> · <a href="{REPO_URL}">methodology</a></p>'
-        '<input class="filter" placeholder="Filter by symbol, name, industry…">'
-        + _table(["Symbol", "Company", "Industry", "Price", "% off high", "RS", "EPS", "A/D", "Grp Rank"],
-                 "\n".join(rows))
+        + FILTER_UI
+        + f'<div class="tbl"><table>{_thead(RATINGS_COLS)}<tbody>\n'
+        + _ratings_rows(rsorted)
+        + "\n</tbody></table></div>"
         + f'<p class="disclaimer">{DISCLAIMER}</p>'
     )
     (site_dir / "ratings.html").write_text(_page("Full ratings — open 85-85", rbody))
@@ -191,100 +303,3 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
     keep = [c for c in ("symbol", "name", "industry", "industry_rank", "price", "pct_off_high",
                         "rs_rating", "eps_rating", "ad_rating") if c in rated.columns]
     rated[keep].to_csv(site_dir / "data" / f"ratings_{run_date}.csv", index=False)
-
-
-def build_groverburger_page(screen: pd.DataFrame, debuts: set[str], run_date: str,
-                            gate_on: bool) -> str:
-    """The projects/canslim-8585 page for groverburger.xyz — self-contained,
-    matches the site's hand-written template conventions, works without JS."""
-    table = _table(SCREEN_HEADERS, _screen_rows(screen, debuts, f"{PAGES_BASE}/charts"))
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Open 85-85 — Zach Booth</title>
-<meta name="description" content="An open-source reconstruction of IBD's proprietary CANSLIM ratings — RS, EPS, and Accumulation/Distribution — recomputed weekly from free data.">
-<link rel="icon" href="/static/images/favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/style.css">
-<style>{_BASE_CSS}
-body {{ max-width:none; padding:0; }}
-.list-wrap {{ overflow-x:auto; }}
-</style>
-</head>
-<body>
-<a class="skip-link" href="#main">Skip to content</a>
-
-<header class="site-head wrap">
-  <a class="site-name" href="/">Zach Booth<span class="handle">groverburger</span></a>
-  <nav class="site-nav" aria-label="Site">
-    <a href="/#work" aria-current="page">Work</a>
-    <a href="/notes.html">Notes</a>
-    <a href="/#contact">Contact</a>
-  </nav>
-</header>
-
-<main id="main">
-
-  <section class="detail-hero wrap">
-    <p class="kicker">Project</p>
-    <h1 class="display">The Open 85-85</h1>
-  </section>
-
-  <section class="wrap">
-    <div class="feature-text" data-reveal>
-      <p class="dek">An open-source reconstruction of IBD&rsquo;s proprietary CANSLIM ratings &mdash; Relative Strength, EPS, and Accumulation/Distribution &mdash; recomputed weekly from free data by a GitHub Action.</p>
-    </div>
-
-    <dl class="detail-facts" data-reveal>
-      <div>
-        <dt>Stack</dt>
-        <dd>Python &middot; pandas &middot; GitHub Actions</dd>
-      </div>
-      <div>
-        <dt>Type</dt>
-        <dd>Open-source screener &amp; weekly list</dd>
-      </div>
-      <div>
-        <dt>Updated</dt>
-        <dd>{run_date}</dd>
-      </div>
-    </dl>
-
-    <div class="prose" data-reveal>
-      <p>William O&rsquo;Neil&rsquo;s 85-85 list screens for stocks rated 85 or better on both Earnings Per Share and Relative Price Strength &mdash; ratings IBD has kept proprietary for four decades. This project reverse-engineers the methodology: every rating is a percentile rank (1&ndash;99) computed against the full US stock universe from free public data, validated against captured IBD lists and per-stock rating vectors. The formulas, the validation work, and every divergence from IBD&rsquo;s numbers are documented in the repository.</p>
-      <p>The list below regenerates every Saturday. <strong>NEW</strong> marks stocks debuting on the list this week &mdash; historically the highest-signal event in the methodology. Symbols link to weekly charts; the <a href="{PAGES_BASE}/ratings.html">full ratings table</a> covers all ~5,400 rated stocks.</p>
-    </div>
-
-    <div class="feature-text" data-reveal>
-      {gate_banner(gate_on)}
-    </div>
-
-    <div class="list-wrap" data-reveal>
-      {table}
-    </div>
-
-    <div class="feature-text" data-reveal>
-      <div class="fact-row">
-        <a class="cta" href="{REPO_URL}">GitHub Repository</a>
-        <a class="cta" href="{PAGES_BASE}/ratings.html">Full ratings table</a>
-      </div>
-    </div>
-
-    <p class="disclaimer">{DISCLAIMER}</p>
-
-    <p class="note-more"><a class="backlink" href="/#work">&larr; Back to work</a></p>
-  </section>
-
-</main>
-
-<footer class="site-foot wrap">
-  <span>&copy; 2026 Zach Booth</span>
-  <span>Hand-built HTML, CSS, and 50 lines of JS. No frameworks.</span>
-</footer>
-</body>
-</html>
-"""

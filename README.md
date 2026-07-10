@@ -17,11 +17,9 @@ data sources — so anyone can run it, audit it, and improve it.
 A GitHub Action recomputes everything every Saturday after the weekly close:
 
 - **[The open 85-85 list](https://groverburger.github.io/canslim-8585/)** —
-  this week's screen with debuts marked, weekly charts per stock, and the
-  85-85 index market gate.
+  this week's screen with debuts marked and weekly charts per stock.
 - **[Full ratings table](https://groverburger.github.io/canslim-8585/ratings.html)**
   — RS, EPS, and A/D ratings for all ~5,400 rated US stocks, sortable.
-- Also published to [groverburger.xyz](https://groverburger.xyz/projects/canslim-8585/).
 - Each week's list is archived in [`archive/`](archive/) — over time this
   becomes the dataset for backtesting list-debut performance.
 
@@ -56,7 +54,7 @@ prices parquet, per-ticker fundamentals JSON) so re-runs are fast.
 | Data | Source | Notes |
 |---|---|---|
 | Universe + industry groups | NASDAQ screener API | ~7,000 NYSE/NASDAQ/AMEX stocks, ~150 industry groups, one request |
-| Daily OHLCV (14 months) | Yahoo Finance via `yfinance` | adjusted prices, chunked bulk download |
+| Daily OHLCV (~3 years) | Yahoo Finance via `yfinance` | adjusted prices, chunked bulk download |
 | Quarterly reported EPS | Yahoo earnings calendar | street EPS, ~8 quarters |
 | Quarterly GAAP EPS + revenue | Yahoo income statements | fallback EPS source; sales growth |
 | Annual EPS | Yahoo income statements | up to 5 fiscal years |
@@ -133,18 +131,22 @@ the default).
 
 ### Accumulation/Distribution Rating — A+ to E−
 
-Volume-weighted close-location money flow over the last 13 weeks (65
-sessions):
+Day-over-day price direction on volume over the last 13 weeks (65 sessions):
 
 ```
-score = Σ volume·((C−L)−(H−C))/(H−L)  ÷  Σ volume
+score = Σ clip(daily return, ±10%) · (volume ÷ avg volume) · decay  ÷  Σ decay
 ```
 
-Days that close near their high on big volume push the score up
-(accumulation); closes near the low push it down (distribution). Scores are
+with a ~1-month half-life recency decay. Up days on heavy volume push the
+score up (accumulation); down days on heavy volume push it down. Scores are
 percentile-ranked across the universe and mapped to quintile letter grades
 A–E with +/− thirds within each quintile. A = heavy institutional buying,
 C = neutral, E = heavy selling.
+
+Day-over-day direction matters: an intraday close-location formula (where in
+the day's range the stock closed) misses gap moves entirely — validated
+against captured IBD A/D grades it scored near-zero rank correlation, vs
++0.67 for this formula, with every sample within about one letter grade.
 
 ### Industry Group Rank
 
