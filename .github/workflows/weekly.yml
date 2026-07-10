@@ -11,6 +11,8 @@ permissions:
   contents: write
 
 env:
+  # stream Python prints so the step shows live progress in the Actions UI
+  PYTHONUNBUFFERED: "1"
   # stagger fundamentals refresh across weeks (6-21 day TTL per symbol)
   # so a weekly CI run refetches ~a third of the universe, not all of it
   OPEN8585_FUND_TTL_DAYS: "6"
@@ -29,8 +31,11 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # restore/save are split (instead of actions/cache) so a failed or
+      # timed-out run still persists whatever fundamentals it fetched —
+      # successive runs converge on a warm cache no matter what
       - name: Restore data cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: |
             data/fundamentals
@@ -41,7 +46,19 @@ jobs:
           restore-keys: open8585-data-
 
       - name: Run screen and build site
+        timeout-minutes: 150
         run: python scripts/publish.py
+
+      - name: Save data cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/fundamentals
+            data/prices.parquet
+            data/universe.json
+            data/benchmark.parquet
+          key: open8585-data-${{ github.run_id }}
 
       - name: Commit weekly archive to master
         run: |

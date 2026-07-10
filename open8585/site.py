@@ -238,10 +238,10 @@ if (dl) {
 # (header label, filter key, type, css class)
 SCREEN_COLS = [
     ("Symbol", "symbol", "text", "l"), ("Company", "name", "text", "l"),
-    ("Industry Group", "industry", "text", "l"), ("Grp", "grp", "num", ""),
+    ("Industry Group", "industry", "text", "l"),
     ("Price", "price", "num", ""), ("Chg%", "chg", "num", ""),
     ("Vol%", "volchg", "num", ""), ("EPS%", "epschg", "num", ""),
-    ("Sales%", "saleschg", "num", ""), ("RS", "rs", "num", ""),
+    ("RS", "rs", "num", ""),
     ("EPS", "eps", "num", ""), ("EPS+RS", "epsrs", "num", ""),
     ("A/D", "ad", "grade", ""),
 ]
@@ -251,7 +251,7 @@ RATINGS_COLS = [
     ("Industry", "industry", "text", "l"), ("Price", "price", "num", ""),
     ("OffHi%", "offhigh", "num", ""), ("RS", "rs", "num", ""),
     ("EPS", "eps", "num", ""), ("EPS+RS", "epsrs", "num", ""),
-    ("A/D", "ad", "grade", ""), ("Grp", "grp", "num", ""),
+    ("A/D", "ad", "grade", ""),
 ]
 
 
@@ -300,12 +300,10 @@ def _screen_rows(screen: pd.DataFrame, debuts: set[str]) -> str:
             f'<td class="l" data-v="{r["symbol"]}"><a href="charts/{r["symbol"]}.png">{r["symbol"]}</a>{star}</td>'
             f'<td class="l">{html.escape(str(r.get("name", ""))[:36])}</td>'
             f'<td class="l">{html.escape(str(r.get("industry", ""))[:34])}</td>'
-            + _fmt(r.get("industry_rank"), "int")
             + _fmt(r.get("price"))
             + _fmt(r.get("price_day_chg"), "chg")
             + _fmt(r.get("vol_pct_chg"), "chg")
             + _fmt(r.get("eps_q0_growth"), "cap999")
-            + _fmt(r.get("sales_growth"), "cap999")
             + _fmt(r.get("rs_rating"), "int")
             + _fmt(r.get("eps_rating"), "int")
             + _fmt(_eps_rs(r), "int")
@@ -329,7 +327,6 @@ def _ratings_rows(rated: pd.DataFrame) -> str:
             + _fmt(r.get("eps_rating"), "int")
             + _fmt(_eps_rs(r), "int")
             + f'<td data-v="{r.get("ad_rating") or ""}">{r.get("ad_rating") or "–"}</td>'
-            + _fmt(r.get("industry_rank"), "int")
             + "</tr>"
         )
     return "\n".join(rows)
@@ -339,7 +336,7 @@ FILTER_UI = (
     '<input class="filter" placeholder="filter: e.g.  semiconductor rs>=90 ad>=B-"'
     ' spellcheck="false"><span class="count"></span>'
     '<p class="hint">bare words match symbol/name/industry &middot; col&gt;=value filters numerically'
-    " (keys: rs, eps, epsrs, ad, price, grp&hellip;) &middot; -term excludes"
+    " (keys: rs, eps, epsrs, ad, price&hellip;) &middot; -term excludes"
     ' (quote phrases: -&quot;real estate&quot; drops REITs) &middot; expressions stack with AND'
     " &middot; click headers to sort &middot; the query lives in the URL, bookmark it</p>"
 )
