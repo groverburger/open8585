@@ -2,7 +2,9 @@ name: weekly-screen
 
 on:
   schedule:
-    - cron: "30 14 * * 6" # Saturdays 14:30 UTC, after Friday's close
+    # Fridays 3PM Pacific (22:00 UTC during PDT; runs 2PM PST in winter —
+    # GitHub cron has no timezone support, both are after the 1PM PT close)
+    - cron: "0 22 * * 5"
   workflow_dispatch:
 
 permissions:

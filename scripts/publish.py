@@ -124,8 +124,9 @@ def main() -> None:
     print(f"[charts] {len(members)} member charts")
 
     from canslim.site import build_pages_site  # noqa: E402
+    run_stamp = pd.Timestamp.now(tz="America/Los_Angeles").strftime("%Y-%m-%d %H:%M %Z")
     build_pages_site(screen, rated, debuts, dropoffs, run_date, args.site_dir,
-                     assets_dir=ROOT / "assets" / "fonts")
+                     assets_dir=ROOT / "assets" / "fonts", run_stamp=run_stamp)
     print(f"[done] {len(screen)} stocks · site/ ready")
 
 

@@ -134,9 +134,20 @@ if (box) {
       if (ok) shown++;
     }
     if (count) count.textContent = shown + " shown";
+    // keep the query in the URL so filters are bookmarkable
+    const url = box.value.trim()
+      ? "#q=" + encodeURIComponent(box.value.trim())
+      : location.pathname + location.search;
+    history.replaceState(null, "", url);
+  };
+  const fromUrl = () => {
+    const m = location.hash.match(/^#q=(.*)$/);
+    box.value = m ? decodeURIComponent(m[1]) : "";
+    apply();
   };
   box.addEventListener("input", apply);
-  apply();
+  window.addEventListener("hashchange", fromUrl);
+  fromUrl();
 }
 """
 
@@ -239,7 +250,13 @@ FILTER_UI = (
     ' spellcheck="false"><span class="count"></span>'
     '<p class="hint">bare words match symbol/name/industry &middot; col&gt;=value filters numerically'
     " (keys: rs, eps, epsrs, ad, price, grp&hellip;) &middot; expressions stack with AND"
-    " &middot; click headers to sort</p>"
+    " &middot; click headers to sort &middot; the query lives in the URL, bookmark it</p>"
+)
+
+FOOTNOTE_999 = (
+    '<p class="hint">EPS%/Sales% of 999 follows IBD&rsquo;s convention: either the company '
+    "turned profitable (growth off a non-positive base isn&rsquo;t a meaningful percentage) "
+    "or growth genuinely exceeds 999%. &minus;999 = still unprofitable.</p>"
 )
 
 
@@ -254,9 +271,10 @@ def _page(title: str, body: str) -> str:
 
 def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str],
                      dropoffs: set[str], run_date: str, site_dir: Path,
-                     assets_dir: Path | None = None) -> None:
+                     assets_dir: Path | None = None, run_stamp: str | None = None) -> None:
     site_dir = Path(site_dir)
     (site_dir / "data").mkdir(parents=True, exist_ok=True)
+    stamp = run_stamp or run_date
 
     if assets_dir and Path(assets_dir).exists():
         import shutil
@@ -271,7 +289,7 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
                      + ", ".join(sorted(dropoffs)) + "</p>")
     body = (
         "<h1>The open 85-85 list</h1>"
-        f'<p class="meta">computed {run_date} · {len(screen)} stocks · '
+        f'<p class="meta">computed {stamp} · {len(screen)} stocks · '
         f'<a href="{REPO_URL}">methodology &amp; source</a> · '
         f'<a href="ratings.html">full ratings table</a></p>'
         "<p>Stocks with EPS and RS ratings of 85+ (percentile-ranked 1&ndash;99 against "
@@ -282,6 +300,7 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
         + f'<div class="tbl"><table>{_thead(SCREEN_COLS)}<tbody>\n'
         + _screen_rows(screen, debuts)
         + "\n</tbody></table></div>"
+        + FOOTNOTE_999
         + f'<p class="disclaimer">{DISCLAIMER}</p>'
     )
     (site_dir / "index.html").write_text(_page("The open 85-85 list", body))
@@ -289,7 +308,7 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
     rsorted = rated.dropna(subset=["rs_rating"]).sort_values("rs_rating", ascending=False)
     rbody = (
         "<h1>Full ratings table</h1>"
-        f'<p class="meta">computed {run_date} · {len(rsorted)} stocks · '
+        f'<p class="meta">computed {stamp} · {len(rsorted)} stocks · '
         f'<a href="index.html">the 85-85 list</a> · <a href="{REPO_URL}">methodology</a></p>'
         + FILTER_UI
         + f'<div class="tbl"><table>{_thead(RATINGS_COLS)}<tbody>\n'
