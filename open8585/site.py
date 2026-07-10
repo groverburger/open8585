@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pandas as pd
 
-REPO_URL = "https://github.com/groverburger/canslim-8585"
+REPO_URL = "https://github.com/groverburger/open8585"
 
 DISCLAIMER = (
     "Educational reconstruction of a proprietary methodology from public data; "
@@ -267,10 +267,10 @@ def _fmt(val, kind="num", cls=""):
     if kind == "cap999":
         v = max(min(val, 999), -999)
         if abs(v) >= 999:
-            tip = ("IBD convention: turned profitable (growth off a non-positive base "
-                   "is not a meaningful %), or real growth beyond 999%"
+            tip = ("Turned profitable (growth off a non-positive base "
+                   "is not a meaningful %), or real growth beyond 999% — the classic 999 convention"
                    if v > 0 else
-                   "IBD convention: still unprofitable in the latest period")
+                   "Still unprofitable in the latest period (classic -999 convention)")
             return f'<td class="t999" data-v="{v:.0f}" title="{tip}">{v:.0f}</td>'
         return f'<td{c} data-v="{v:.0f}">{v:.0f}</td>'
     return f'<td{c} data-v="{val:.2f}">{val:,.2f}</td>'

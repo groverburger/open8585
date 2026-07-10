@@ -13,8 +13,8 @@ permissions:
 env:
   # stagger fundamentals refresh across weeks (6-21 day TTL per symbol)
   # so a weekly CI run refetches ~a third of the universe, not all of it
-  CANSLIM_FUND_TTL_DAYS: "6"
-  CANSLIM_FUND_TTL_JITTER_DAYS: "15"
+  OPEN8585_FUND_TTL_DAYS: "6"
+  OPEN8585_FUND_TTL_JITTER_DAYS: "15"
 
 jobs:
   publish:
@@ -37,8 +37,8 @@ jobs:
             data/prices.parquet
             data/universe.json
             data/benchmark.parquet
-          key: canslim-data-${{ github.run_id }}
-          restore-keys: canslim-data-
+          key: open8585-data-${{ github.run_id }}
+          restore-keys: open8585-data-
 
       - name: Run screen and build site
         run: python scripts/publish.py

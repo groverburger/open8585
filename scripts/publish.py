@@ -26,8 +26,8 @@ import pandas as pd
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-from canslim import charts  # noqa: E402
-from canslim.screen import ScreenConfig, run_screen  # noqa: E402
+from open8585 import charts  # noqa: E402
+from open8585.screen import ScreenConfig, run_screen  # noqa: E402
 
 
 def street_eps_backfill(symbols: list[str], data_dir: Path, budget_minutes: float) -> None:
@@ -123,7 +123,7 @@ def main() -> None:
                             eps_ttm=eps_ttm_series(row["symbol"], args.data_dir))
     print(f"[charts] {len(members)} member charts")
 
-    from canslim.site import build_pages_site  # noqa: E402
+    from open8585.site import build_pages_site  # noqa: E402
     run_stamp = pd.Timestamp.now(tz="America/Los_Angeles").strftime("%Y-%m-%d %H:%M %Z")
     build_pages_site(screen, rated, debuts, dropoffs, run_date, args.site_dir,
                      assets_dir=ROOT / "assets" / "fonts", run_stamp=run_stamp)

@@ -21,7 +21,7 @@ import pandas as pd
 import yfinance as yf
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from canslim.fundamentals import _series_to_records  # noqa: E402
+from open8585.fundamentals import _series_to_records  # noqa: E402
 
 CACHE = Path(__file__).parent.parent / "data" / "fundamentals"
 DELAY = 0.5

@@ -1,24 +1,31 @@
-# canslim-8585
+# open8585
 
-An open-source reconstruction of the IBD (Investor's Business Daily / William
-O'Neil) **CANSLIM 85-85 list**: a weekly screen of industry group leaders with
-**Earnings Per Share and Relative Price Strength ratings of 85 or higher**,
-priced $10+, within 15% of their 52-week high, with average daily volume of at
-least 10,000 shares. It also includes an open reconstruction of IBD's
-**Accumulation/Distribution Rating** (A–E).
+**The open 85-85 list**: a weekly screen for stocks rated **85 or higher on
+both earnings growth (EPS Rating) and relative price strength (RS Rating)**
+— percentile ranks 1–99 against the full US stock universe — priced $10+,
+within 15% of their 52-week high, with average daily volume of at least
+10,000 shares. Plus an open Accumulation/Distribution Rating (A–E) that
+grades institutional buying vs selling pressure.
 
-IBD's exact rating formulas are proprietary. This project implements the
-publicly documented reconstructions, computes every rating as a percentile
-rank against the *full* US stock universe (as IBD does), and uses only free
-data sources — so anyone can run it, audit it, and improve it.
+The commercial versions of these ratings are proprietary black boxes. This
+project implements them in the open from publicly documented descriptions,
+validates them against captured samples of the commercial products, and uses
+only free data sources — so anyone can run it, audit it, and improve it.
+
+*Attribution: the 85-85 method and these rating concepts were popularized by
+Investor's Business Daily® and William O'Neil's* How to Make Money in Stocks.
+*This is an independent educational reconstruction, not affiliated with or
+endorsed by IBD, William O'Neil + Co., or any data vendor; trademarks belong
+to their owners and are used only to identify what was studied and validated
+against.*
 
 ## The published weekly list
 
 A GitHub Action recomputes everything every Saturday after the weekly close:
 
-- **[The open 85-85 list](https://groverburger.github.io/canslim-8585/)** —
+- **[The open 85-85 list](https://groverburger.github.io/open8585/)** —
   this week's screen with debuts marked and weekly charts per stock.
-- **[Full ratings table](https://groverburger.github.io/canslim-8585/ratings.html)**
+- **[Full ratings table](https://groverburger.github.io/open8585/ratings.html)**
   — RS, EPS, and A/D ratings for all ~5,400 rated US stocks, sortable.
 - Each week's list is archived in [`archive/`](archive/) — over time this
   becomes the dataset for backtesting list-debut performance.
@@ -203,7 +210,7 @@ none are unexplained. For context on the gap:
 ## Project layout
 
 ```
-canslim/
+open8585/
   universe.py       # NASDAQ screener universe + industry groups
   prices.py         # chunked yfinance bulk download, parquet cache
   ratings.py        # RS rating, A/D rating, industry ranks, price metrics

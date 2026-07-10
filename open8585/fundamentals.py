@@ -40,11 +40,11 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-CACHE_MAX_AGE_DAYS = int(os.environ.get("CANSLIM_FUND_TTL_DAYS", "7"))
+CACHE_MAX_AGE_DAYS = int(os.environ.get("OPEN8585_FUND_TTL_DAYS", "7"))
 # Optional per-symbol TTL jitter (days). In CI this staggers the weekly
 # refresh across the universe so one run never refetches everything at
 # once (Yahoo throttles shared CI IPs hard).
-CACHE_TTL_JITTER_DAYS = int(os.environ.get("CANSLIM_FUND_TTL_JITTER_DAYS", "0"))
+CACHE_TTL_JITTER_DAYS = int(os.environ.get("OPEN8585_FUND_TTL_JITTER_DAYS", "0"))
 MAX_WORKERS = 8
 
 

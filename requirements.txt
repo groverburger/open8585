@@ -4,3 +4,4 @@ yfinance
 requests
 pyarrow
 tabulate
+matplotlib

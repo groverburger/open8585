@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the open-source CANSLIM 85-85 screen.
+"""Run the open 85-85 screen.
 
 Examples:
     python3 run_screen.py                    # full universe (first run ~15-30 min)
@@ -14,11 +14,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from canslim.screen import ScreenConfig, format_screen, run_screen
+from open8585.screen import ScreenConfig, format_screen, run_screen
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Open-source CANSLIM 85-85 screen")
+    parser = argparse.ArgumentParser(description="The open 85-85 screen")
     parser.add_argument("--data-dir", type=Path, default=Path(__file__).parent / "data")
     parser.add_argument("--output-dir", type=Path, default=Path(__file__).parent / "output")
     parser.add_argument("--min-rs", type=int, default=85, help="minimum RS rating (default 85)")
@@ -39,7 +39,7 @@ def main() -> None:
     parser.add_argument("--refresh", action="store_true", help="ignore caches and re-download")
     args = parser.parse_args()
     if args.min_ad:
-        from canslim.ratings import GRADE_SCALE
+        from open8585.ratings import GRADE_SCALE
         args.min_ad = args.min_ad.upper()
         if args.min_ad not in GRADE_SCALE:
             parser.error(f"--min-ad must be one of {', '.join(GRADE_SCALE)}")
@@ -70,7 +70,7 @@ def main() -> None:
     table = format_screen(screen)
     md_path = args.output_dir / f"screen_{stamp}.md"
     md_path.write_text(
-        f"# CANSLIM 85-85 screen — {stamp}\n\n"
+        f"# open 85-85 screen — {stamp}\n\n"
         f"{len(table)} stocks: RS ≥ {cfg.min_rs}, EPS ≥ {cfg.min_eps}, "
         f"price ≥ ${cfg.min_price:.0f}, within {cfg.max_pct_off_high:.0f}% of 52-wk high, "
         f"ADV ≥ {cfg.min_adv:,.0f} shares.\n\n" + table.to_markdown(index=False) + "\n"
