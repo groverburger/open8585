@@ -1,4 +1,7 @@
 data/
 output/
+site/
+site-page/
+sitework/
 __pycache__/
 *.pyc

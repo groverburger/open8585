@@ -12,6 +12,21 @@ publicly documented reconstructions, computes every rating as a percentile
 rank against the *full* US stock universe (as IBD does), and uses only free
 data sources — so anyone can run it, audit it, and improve it.
 
+## The published weekly list
+
+A GitHub Action recomputes everything every Saturday after the weekly close:
+
+- **[The open 85-85 list](https://groverburger.github.io/canslim-8585/)** —
+  this week's screen with debuts marked, weekly charts per stock, and the
+  85-85 index market gate.
+- **[Full ratings table](https://groverburger.github.io/canslim-8585/ratings.html)**
+  — RS, EPS, and A/D ratings for all ~5,400 rated US stocks, sortable.
+- Also published to [groverburger.xyz](https://groverburger.xyz/projects/canslim-8585/).
+- Each week's list is archived in [`archive/`](archive/) — over time this
+  becomes the dataset for backtesting list-debut performance.
+
+To publish locally (e.g. if a CI run fails): `python3 scripts/publish.py`.
+
 ## Quick start
 
 ```bash

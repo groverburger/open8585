@@ -1,0 +1,80 @@
+name: weekly-screen
+
+on:
+  schedule:
+    - cron: "30 14 * * 6" # Saturdays 14:30 UTC, after Friday's close
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # stagger fundamentals refresh across weeks (6-21 day TTL per symbol)
+  # so a weekly CI run refetches ~a third of the universe, not all of it
+  CANSLIM_FUND_TTL_DAYS: "6"
+  CANSLIM_FUND_TTL_JITTER_DAYS: "15"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Restore data cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/fundamentals
+            data/prices.parquet
+            data/universe.json
+            data/benchmark.parquet
+          key: canslim-data-${{ github.run_id }}
+          restore-keys: canslim-data-
+
+      - name: Run screen and build site
+        run: python scripts/publish.py --site-page site-page/index.html
+
+      - name: Commit weekly archive to master
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add archive/
+          git diff --cached --quiet || git commit -m "Archive weekly screen $(date -u +%F)"
+          git push
+
+      - name: Force-push site branch (single commit, no history bloat)
+        run: |
+          cd site
+          git init -q -b site
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Site build $(date -u +%F)"
+          git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" site
+
+      - name: Update groverburger.xyz project page
+        if: ${{ secrets.SITE_DEPLOY_KEY != '' }}
+        env:
+          SITE_DEPLOY_KEY: ${{ secrets.SITE_DEPLOY_KEY }}
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add - <<< "$SITE_DEPLOY_KEY"
+          mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git clone -q --depth 1 git@github.com:groverburger/groverburger.xyz.git sitework
+          mkdir -p sitework/projects/canslim-8585
+          cp site-page/index.html sitework/projects/canslim-8585/index.html
+          cd sitework
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add projects/canslim-8585/
+          git diff --cached --quiet || {
+            git commit -m "Update open 85-85 list ($(date -u +%F))"
+            git push
+          }

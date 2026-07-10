@@ -30,7 +30,9 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import time
+import zlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -38,8 +40,17 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-CACHE_MAX_AGE_DAYS = 7
+CACHE_MAX_AGE_DAYS = int(os.environ.get("CANSLIM_FUND_TTL_DAYS", "7"))
+# Optional per-symbol TTL jitter (days). In CI this staggers the weekly
+# refresh across the universe so one run never refetches everything at
+# once (Yahoo throttles shared CI IPs hard).
+CACHE_TTL_JITTER_DAYS = int(os.environ.get("CANSLIM_FUND_TTL_JITTER_DAYS", "0"))
 MAX_WORKERS = 8
+
+
+def _cache_ttl_seconds(symbol: str) -> float:
+    jitter = zlib.crc32(symbol.encode()) % (CACHE_TTL_JITTER_DAYS + 1)
+    return (CACHE_MAX_AGE_DAYS + jitter) * 86400
 GROWTH_CAP = 999.0  # IBD prints 999 for growth off a <=0 base
 
 
@@ -89,7 +100,7 @@ def fetch_fundamentals(symbols: list[str], cache_dir: Path, refresh: bool = Fals
         path = cache_dir / f"{sym}.json"
         if path.exists() and not refresh:
             rec = json.loads(path.read_text())
-            if time.time() - rec.get("fetched_at", 0) < CACHE_MAX_AGE_DAYS * 86400:
+            if time.time() - rec.get("fetched_at", 0) < _cache_ttl_seconds(sym):
                 results[sym] = rec
                 continue
         to_fetch.append(sym)
