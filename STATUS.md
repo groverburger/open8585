@@ -106,6 +106,36 @@ aggressive (B-, 180) and conservative (A-, 190) screens. Lecture
 transcript: ~/Documents/projects/pocket-pivots/downloads/
 2020-ibd-joint-day1-owen/.
 
+**Three-way triangulation vs Deepvue (2026-07-10,
+`validation/deepvue_samples_2026-07.txt` + checkup batch 2)**
+
+RS on 8 IBD-labeled names spanning 21-99: ours MAE 1.1 (max 3) vs current
+IBD; Deepvue MAE 8.0 (max 11) on its 3 shared names. ALAB/CRDO sit >=87th
+percentile in every return window (1/3/6/12mo), so NO window-weighted
+percentile — original-formula or otherwise — can produce Deepvue's 87-89
+over a stock universe; their divergence is the ranking pool (likely ETFs/
+everything-in-DB) or a non-price adjustment, not formula vintage. The
+community claim that "IBD changed its formula and Deepvue keeps the
+original" is not supported: our implementation of the *classic documented*
+formula matches current IBD to ~1 point, which is evidence IBD's RS is
+still rank-equivalent to the classic formula.
+
+A/D: on the contested CRDO call (June 26: -11.2% on 4.5x volume), IBD's
+C- sides with our D+ against Deepvue's A+. GDDY is our worst A/D miss
+(ours C+, IBD A+): accumulation-into-decline, which our direction-times-
+volume formula underweights — open improvement.
+
+EPS: pairwise MAEs ~8-16 among all three vendors; we're closest to IBD on
+2 of 3. ALAB (IBD 71 vs ours 96 with stellar quarters) suggests IBD
+penalizes short earnings history (2024 IPO, no 3yr annual record) rather
+than renormalizing like we do — but GEV (2024 spinoff) made IBD's 85-85
+list, so the penalty isn't categorical. One data point each way; not
+implemented.
+
+Deepvue data-quality finding: CHAI/FRGT/ROLR/BLSH passed their "within
+15% of 52-wk high" filter while 67-97% below adjusted 52-wk closing highs
+(reverse-split artifacts on their side).
+
 ## Known gaps / next ideas
 
 - **85-85 index** (from the lecture): price-weighted index of list

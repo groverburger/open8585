@@ -1,0 +1,5 @@
+# Deepvue ratings, captured 2026-07-10
+# symbol rs eps ad
+ALAB 89 91 A+
+CRDO 87 98 A+
+GDDY 24 70 B
