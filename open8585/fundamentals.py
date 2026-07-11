@@ -121,7 +121,16 @@ def fetch_fundamentals(symbols: list[str], cache_dir: Path, refresh: bool = Fals
                 except Exception as exc:  # noqa: BLE001
                     print(f"  {sym}: fundamentals fetch failed ({exc})", flush=True)
                     continue
-                (cache_dir / f"{sym}.json").write_text(json.dumps(rec))
+                # merge-preserve: a refresh that comes back empty (e.g. the
+                # street-EPS endpoint is blocked from this network) must not
+                # clobber good history already in the cache
+                path = cache_dir / f"{sym}.json"
+                if path.exists():
+                    prev = json.loads(path.read_text())
+                    for field in ("reported_eps", "q_eps", "q_revenue", "a_eps"):
+                        if not rec.get(field) and prev.get(field):
+                            rec[field] = prev[field]
+                path.write_text(json.dumps(rec))
                 results[sym] = rec
                 done += 1
                 if done % 25 == 0:

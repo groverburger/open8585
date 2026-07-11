@@ -1,20 +1,25 @@
 name: weekly-screen
 
-# Manual fallback only. Yahoo blocks GitHub's runner IPs on the street-EPS
-# endpoint (a full run filled 0 of 626 requests), so the scheduled weekly
-# publish runs locally instead — see scripts/weekly_local.sh. publish.py
-# aborts rather than ship GAAP-degraded ratings from a runner.
+# Fully autonomous weekly publish. Yahoo blocks GitHub runner IPs on its
+# street-EPS endpoint, so the street-EPS history lives in a private repo
+# (groverburger/open8585-data, via DATA_DEPLOY_KEY) and is maintained
+# incrementally from NASDAQ's earnings-surprise API, which works from
+# runners (probe: 39/40). publish.py's quality gate aborts rather than
+# ship GAAP-degraded ratings if the store is unavailable.
 on:
+  schedule:
+    # Fridays 3PM Pacific (22:00 UTC during PDT; 2PM PST in winter — both
+    # after the 1PM PT close; GitHub cron has no timezone support)
+    - cron: "0 22 * * 5"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 env:
-  # stream Python prints so the step shows live progress in the Actions UI
   PYTHONUNBUFFERED: "1"
-  # stagger fundamentals refresh across weeks (6-21 day TTL per symbol)
-  # so a weekly CI run refetches ~a third of the universe, not all of it
+  # stagger GAAP-fundamentals refresh across weeks (6-21 day TTL per
+  # symbol); street EPS is maintained separately via the data store
   OPEN8585_FUND_TTL_DAYS: "6"
   OPEN8585_FUND_TTL_JITTER_DAYS: "15"
 
@@ -31,34 +36,57 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      # restore/save are split (instead of actions/cache) so a failed or
-      # timed-out run still persists whatever fundamentals it fetched —
-      # successive runs converge on a warm cache no matter what
-      - name: Restore data cache
+      - name: Restore price/universe cache
         uses: actions/cache/restore@v4
         with:
           path: |
-            data/fundamentals
             data/prices.parquet
             data/universe.json
             data/benchmark.parquet
           key: open8585-data-${{ github.run_id }}
           restore-keys: open8585-data-
 
+      - name: Fetch fundamentals store
+        env:
+          DATA_DEPLOY_KEY: ${{ secrets.DATA_DEPLOY_KEY }}
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add - <<< "$DATA_DEPLOY_KEY"
+          mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git clone -q --depth 1 git@github.com:groverburger/open8585-data.git data-store
+          mkdir -p data
+          cp -a data-store/fundamentals data/fundamentals
+          echo "store: $(ls data/fundamentals | wc -l) symbols"
+
       - name: Run screen and build site
         timeout-minutes: 150
-        run: python scripts/publish.py
+        run: python scripts/publish.py --street-source nasdaq
 
-      - name: Save data cache
+      - name: Save price/universe cache
         if: always()
         uses: actions/cache/save@v4
         with:
           path: |
-            data/fundamentals
             data/prices.parquet
             data/universe.json
             data/benchmark.parquet
           key: open8585-data-${{ github.run_id }}
+
+      - name: Push fundamentals store updates
+        env:
+          DATA_DEPLOY_KEY: ${{ secrets.DATA_DEPLOY_KEY }}
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add - <<< "$DATA_DEPLOY_KEY"
+          rsync -a --delete data/fundamentals/ data-store/fundamentals/
+          cd data-store
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || {
+            git commit -q -m "Update fundamentals $(TZ=America/Los_Angeles date +%F)"
+            git push -q
+          }
 
       - name: Commit weekly archive to master
         run: |

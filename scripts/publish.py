@@ -91,7 +91,18 @@ def main() -> None:
     ap.add_argument("--refresh", action="store_true")
     ap.add_argument("--allow-degraded", action="store_true",
                     help="publish even when most EPS ratings fell back to GAAP")
+    ap.add_argument("--street-source", choices=("yahoo", "nasdaq"), default="yahoo",
+                    help="street-EPS updater: yahoo (24-quarter history; blocked from "
+                         "datacenter IPs) or nasdaq (last 4 quarters, works from CI; "
+                         "maintains a seeded history incrementally)")
     args = ap.parse_args()
+
+    if args.street_source == "nasdaq" and not args.skip_backfill:
+        # refresh stale street EPS BEFORE rating, so quarters reported this
+        # week are in this week's ratings
+        from open8585.nasdaq_eps import update_street_eps
+        cached = sorted(f.stem for f in (args.data_dir / "fundamentals").glob("*.json"))
+        update_street_eps(cached, args.data_dir / "fundamentals", args.backfill_minutes)
 
     cfg = ScreenConfig(data_dir=args.data_dir, refresh=args.refresh)
     screen, rated = run_screen(cfg)
@@ -109,7 +120,7 @@ def main() -> None:
                  "fundamentals cache is degraded. Run from a network Yahoo "
                  "doesn't block, or pass --allow-degraded to override.")
 
-    if not args.skip_backfill:
+    if not args.skip_backfill and args.street_source == "yahoo":
         universe_rotation = rated["symbol"].sample(frac=1, random_state=hash(run_date) % 2**32).tolist()
         street_eps_backfill(screen["symbol"].tolist() + universe_rotation,
                             args.data_dir, args.backfill_minutes)
