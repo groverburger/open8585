@@ -71,6 +71,8 @@ def _fetch_one(symbol: str) -> dict:
         ed = t.get_earnings_dates(limit=12)
         reported = ed["Reported EPS"].dropna() if ed is not None else pd.Series(dtype=float)
         rec["reported_eps"] = _series_to_records(reported.sort_index())
+    except ImportError:
+        raise  # missing dependency (e.g. lxml) is a config error, not a data gap
     except Exception:
         rec["reported_eps"] = []
 

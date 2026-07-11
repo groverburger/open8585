@@ -1,11 +1,11 @@
 name: weekly-screen
 
-# Fully autonomous weekly publish. Yahoo blocks GitHub runner IPs on its
-# street-EPS endpoint, so the street-EPS history lives in a private repo
-# (groverburger/open8585-data, via DATA_DEPLOY_KEY) and is maintained
-# incrementally from NASDAQ's earnings-surprise API, which works from
-# runners (probe: 39/40). publish.py's quality gate aborts rather than
-# ship GAAP-degraded ratings if the store is unavailable.
+# Fully autonomous weekly publish. Street-EPS history lives in a private
+# repo (groverburger/open8585-data, via DATA_DEPLOY_KEY) and is maintained
+# incrementally from NASDAQ's earnings-surprise API (probe: 39/40 from a
+# runner); Yahoo's earnings calendar also works from runners (needs lxml —
+# its absence once masqueraded as an IP block) and serves as fallback.
+# publish.py's quality gate aborts rather than ship GAAP-degraded ratings.
 on:
   schedule:
     # Fridays 3PM Pacific (22:00 UTC during PDT; 2PM PST in winter — both

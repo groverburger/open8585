@@ -172,6 +172,21 @@ Deepvue data-quality finding: CHAI/FRGT/ROLR/BLSH passed their "within
   current IBD to +-1 point; Deepvue reads 8-11 points cooler, so
   IBD-calibrated cutoffs (RS>84) silently exclude names IBD rates 90-95.
 
+**Correction (2026-07-10): the "Yahoo blocks CI" diagnosis was wrong.**
+The degraded CI run traced to a missing `lxml` dependency — yfinance's
+get_earnings_dates silently returns empty without it, and both yfinance
+and our fetch layer swallowed the ImportError. A controlled probe from a
+fresh runner with lxml installed filled 12/12 symbols with full 24-quarter
+histories. Fixes: lxml added to requirements; ImportError now raises
+instead of being swallowed (a missing dependency is a config error, not a
+data gap); all comments/docs corrected. The private-store + NASDAQ
+incremental architecture stays as CI's street-EPS primary — it's gentler
+than bulk earnings-calendar calls (which rate-limit under load from any
+IP) and durable against vendor changes — with Yahoo now a working CI
+fallback. Lesson recorded: silent exception-swallowing turned a one-line
+dependency bug into a false architectural conclusion; probes must
+distinguish error classes.
+
 ## Known gaps / next ideas
 
 - **85-85 index** (from the lecture): price-weighted index of list

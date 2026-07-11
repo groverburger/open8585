@@ -1,11 +1,14 @@
 """Incremental street-EPS updates from NASDAQ's earnings-surprise API.
 
-Yahoo's earnings-calendar endpoint (our primary street-EPS source) is
-blocked from datacenter IPs, so CI can't use it. NASDAQ's endpoint works
-everywhere (probe from a GitHub runner: 39/40 filled) but only returns
-the last ~4 reported quarters. That's exactly enough for incremental
-maintenance: given a seeded history, each week only the quarters reported
-since the last run are new, and they're always within the last 4.
+NASDAQ's endpoint works everywhere (probe from a GitHub runner: 39/40
+filled) but only returns the last ~4 reported quarters. Yahoo's
+earnings-calendar endpoint also works from CI (it needs lxml installed;
+its absence once masqueraded as an IP block) and remains the fallback and
+the local-run primary — but it rate-limits hard under bulk load, so the
+gentle one-request-per-symbol path here is CI's primary. Four quarters is
+exactly enough for incremental maintenance: given a seeded history, each
+week only the quarters reported since the last run are new, and they're
+always within the last 4.
 
 Vendor note: NASDAQ's adjusted EPS can differ a few percent from Yahoo's
 for the same quarter (different adjustment conventions). Appended records

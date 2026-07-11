@@ -110,15 +110,15 @@ def main() -> None:
 
     # Data-quality gate: the EPS ratings were calibrated on street
     # (reported) EPS. If most of the list rated from the GAAP fallback,
-    # the fetch environment is degraded (Yahoo blocks datacenter IPs -
-    # a GitHub runner filled 0 of 626 street-EPS requests) and publishing
-    # would churn the list for data reasons, not market reasons.
+    # the street-EPS pipeline is degraded (a missing lxml once made every
+    # earnings-calendar call silently return empty in CI, churning half
+    # the list) and publishing would reflect data damage, not the market.
     street_share = (screen["eps_source"] == "reported").mean() if len(screen) else 0.0
     print(f"[quality] street-EPS share of list: {street_share:.0%}")
     if street_share < 0.5 and not args.allow_degraded:
         sys.exit("ABORT: street-EPS share below 50% (expected ~85%) - the "
-                 "fundamentals cache is degraded. Run from a network Yahoo "
-                 "doesn't block, or pass --allow-degraded to override.")
+                 "fundamentals cache is degraded - check dependencies (lxml), "
+                 "the data store, and rate limits, or pass --allow-degraded.")
 
     if not args.skip_backfill and args.street_source == "yahoo":
         universe_rotation = rated["symbol"].sample(frac=1, random_state=hash(run_date) % 2**32).tolist()
