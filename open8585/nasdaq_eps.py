@@ -75,8 +75,8 @@ def update_street_eps(symbols: list[str], cache_dir: Path, budget_minutes: float
     """
     cache_dir = Path(cache_dir)
     now = pd.Timestamp.now()
-    due = []
-    for s in dict.fromkeys(symbols):  # dedupe, keep order
+    due = []  # (staleness_days, symbol)
+    for s in dict.fromkeys(symbols):
         path = cache_dir / f"{s}.json"
         if not path.exists():
             continue
@@ -84,11 +84,15 @@ def update_street_eps(symbols: list[str], cache_dir: Path, budget_minutes: float
         reported = rec.get("reported_eps") or []
         if not rec.get("q_eps") and not reported:
             continue  # no earnings data at all; nothing to maintain
-        if not reported or (now - pd.Timestamp(reported[-1][0])).days > STALE_DAYS:
-            due.append(s)
+        age = (now - pd.Timestamp(reported[-1][0])).days if reported else 9999
+        if age > STALE_DAYS:
+            due.append((age, s))
     if not due:
         print("[nasdaq-eps] nothing due")
         return
+    # most-stale first: symbols whose next report has actually landed sit
+    # deepest past STALE_DAYS, and no symbol starves on alphabet position
+    due = [s for _, s in sorted(due, reverse=True)]
 
     print(f"[nasdaq-eps] {len(due)} symbols due; budget {budget_minutes:.0f} min")
     deadline = time.time() + budget_minutes * 60
