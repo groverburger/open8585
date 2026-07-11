@@ -30,18 +30,21 @@ from open8585 import charts  # noqa: E402
 from open8585.screen import ScreenConfig, run_screen  # noqa: E402
 
 
-def street_eps_backfill(symbols: list[str], data_dir: Path, budget_minutes: float) -> None:
-    """Serially backfill street EPS via killable subprocesses (Yahoo's
-    earnings endpoint throttles and hangs; see validation/backfill_one.py).
-    Time-bounded so CI runs converge over successive weeks."""
+def street_eps_backfill(symbols: list[str], data_dir: Path, budget_minutes: float,
+                        only_missing: bool = True) -> None:
+    """Serially (re)fetch full Yahoo street-EPS histories via killable
+    subprocesses (the endpoint throttles and hangs; see
+    validation/backfill_one.py). With only_missing=False it refreshes the
+    given symbols outright - used for vendor-incompatible names where
+    NASDAQ quarters must not be mixed into Yahoo history."""
     fund = data_dir / "fundamentals"
     todo = []
-    for s in symbols:
+    for s in dict.fromkeys(symbols):
         p = fund / f"{s}.json"
         if not p.exists():
             continue
         rec = json.loads(p.read_text())
-        if not rec.get("reported_eps") and rec.get("q_eps"):
+        if not only_missing or (not rec.get("reported_eps") and rec.get("q_eps")):
             todo.append(s)
     if not todo:
         return
@@ -102,7 +105,14 @@ def main() -> None:
         # week are in this week's ratings
         from open8585.nasdaq_eps import update_street_eps
         cached = sorted(f.stem for f in (args.data_dir / "fundamentals").glob("*.json"))
-        update_street_eps(cached, args.data_dir / "fundamentals", args.backfill_minutes)
+        incompatible = update_street_eps(cached, args.data_dir / "fundamentals",
+                                         args.backfill_minutes)
+        if incompatible:
+            # SBC-heavy names where NASDAQ (Zacks) and Yahoo conventions
+            # diverge: refresh their whole history from Yahoo instead
+            # (works from CI too - needs lxml - just rate-limited in bulk)
+            street_eps_backfill(incompatible, args.data_dir, budget_minutes=10,
+                                only_missing=False)
 
     cfg = ScreenConfig(data_dir=args.data_dir, refresh=args.refresh)
     screen, rated = run_screen(cfg)
