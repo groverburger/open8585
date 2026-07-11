@@ -89,11 +89,25 @@ def main() -> None:
     ap.add_argument("--skip-backfill", action="store_true")
     ap.add_argument("--max-charts", type=int, default=None, help="cap charts (testing)")
     ap.add_argument("--refresh", action="store_true")
+    ap.add_argument("--allow-degraded", action="store_true",
+                    help="publish even when most EPS ratings fell back to GAAP")
     args = ap.parse_args()
 
     cfg = ScreenConfig(data_dir=args.data_dir, refresh=args.refresh)
     screen, rated = run_screen(cfg)
     run_date = pd.Timestamp.now(tz="America/Los_Angeles").date().isoformat()
+
+    # Data-quality gate: the EPS ratings were calibrated on street
+    # (reported) EPS. If most of the list rated from the GAAP fallback,
+    # the fetch environment is degraded (Yahoo blocks datacenter IPs -
+    # a GitHub runner filled 0 of 626 street-EPS requests) and publishing
+    # would churn the list for data reasons, not market reasons.
+    street_share = (screen["eps_source"] == "reported").mean() if len(screen) else 0.0
+    print(f"[quality] street-EPS share of list: {street_share:.0%}")
+    if street_share < 0.5 and not args.allow_degraded:
+        sys.exit("ABORT: street-EPS share below 50% (expected ~85%) - the "
+                 "fundamentals cache is degraded. Run from a network Yahoo "
+                 "doesn't block, or pass --allow-degraded to override.")
 
     if not args.skip_backfill:
         universe_rotation = rated["symbol"].sample(frac=1, random_state=hash(run_date) % 2**32).tolist()

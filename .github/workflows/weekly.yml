@@ -1,10 +1,10 @@
 name: weekly-screen
 
+# Manual fallback only. Yahoo blocks GitHub's runner IPs on the street-EPS
+# endpoint (a full run filled 0 of 626 requests), so the scheduled weekly
+# publish runs locally instead — see scripts/weekly_local.sh. publish.py
+# aborts rather than ship GAAP-degraded ratings from a runner.
 on:
-  schedule:
-    # Fridays 3PM Pacific (22:00 UTC during PDT; runs 2PM PST in winter —
-    # GitHub cron has no timezone support, both are after the 1PM PT close)
-    - cron: "0 22 * * 5"
   workflow_dispatch:
 
 permissions:
