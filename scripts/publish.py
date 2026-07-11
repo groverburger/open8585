@@ -93,7 +93,7 @@ def main() -> None:
 
     cfg = ScreenConfig(data_dir=args.data_dir, refresh=args.refresh)
     screen, rated = run_screen(cfg)
-    run_date = pd.Timestamp.today().date().isoformat()
+    run_date = pd.Timestamp.now(tz="America/Los_Angeles").date().isoformat()
 
     if not args.skip_backfill:
         universe_rotation = rated["symbol"].sample(frac=1, random_state=hash(run_date) % 2**32).tolist()
