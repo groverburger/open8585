@@ -135,16 +135,22 @@ def main() -> None:
         street_eps_backfill(screen["symbol"].tolist() + universe_rotation,
                             args.data_dir, args.backfill_minutes)
 
-    # week-over-week diff vs the most recent archived screen
+    # Debuts are WEEK-over-week: "first appearance on the weekly list" is
+    # the methodology's signal, so the baseline is the newest archive from
+    # a PRIOR ISO week - mid-week or same-week reruns never eat a debut,
+    # and with no prior-week data yet, nothing is marked NEW.
     args.archive_dir.mkdir(parents=True, exist_ok=True)
-    prior = sorted(p for p in args.archive_dir.glob("screen_*.csv")
-                   if p.stem.split("_")[1] < run_date)
+    this_week = pd.Timestamp(run_date).isocalendar()[:2]
+    prior = sorted(
+        p for p in args.archive_dir.glob("screen_*.csv")
+        if pd.Timestamp(p.stem.split("_")[1]).isocalendar()[:2] < this_week
+    )
     prev_symbols = set(pd.read_csv(prior[-1])["symbol"]) if prior else set()
     debuts = set(screen["symbol"]) - prev_symbols if prev_symbols else set()
     dropoffs = prev_symbols - set(screen["symbol"])
     screen.to_csv(args.archive_dir / f"screen_{run_date}.csv", index=False)
     print(f"[diff] {len(debuts)} debuts, {len(dropoffs)} drop-offs vs "
-          f"{prior[-1].name if prior else '(no prior week)'}")
+          f"{prior[-1].name if prior else '(no prior-week baseline yet)'}")
 
     print("[charts] rendering")
     prices = pd.read_parquet(args.data_dir / "prices.parquet")

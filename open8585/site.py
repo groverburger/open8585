@@ -391,7 +391,8 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
         f'<a href="ratings.html">full ratings table</a></p>'
         "<p>Stocks with EPS and RS ratings of 85+ (percentile-ranked 1&ndash;99 against "
         "the full US stock universe), priced $10+, within 15% of their 52-week closing "
-        "high, average volume 10,000+ shares. NEW marks this week's debuts. "
+        "high, average volume 10,000+ shares. NEW marks first appearance vs the "
+        "prior week's list &mdash; the methodology's highest-signal event. "
         "Symbols link to weekly charts.</p>"
         + FILTER_UI + drop_note
         + f'<div class="tbl"><table>{_thead(SCREEN_COLS)}<tbody>\n'
