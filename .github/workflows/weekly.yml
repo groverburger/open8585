@@ -65,7 +65,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add archive/
-          git diff --cached --quiet || git commit -m "Archive weekly screen $(date -u +%F)"
+          git diff --cached --quiet || git commit -m "Archive weekly screen $(TZ=America/Los_Angeles date +%F)"
           git pull --rebase origin master
           git push
 
@@ -76,5 +76,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -q -m "Site build $(date -u +%F)"
+          git commit -q -m "Site build $(TZ=America/Los_Angeles date +%F)"
           git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" site
