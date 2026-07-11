@@ -1,6 +1,7 @@
 pandas
 numpy
 yfinance
+lxml
 requests
 pyarrow
 tabulate
