@@ -1,13 +1,11 @@
 #!/bin/zsh
-# Weekly publish from this machine. Yahoo blocks GitHub's runner IPs on the
-# street-EPS endpoint, so the scheduled run lives here, where the data is
-# full-fidelity. Schedule with launchd (Friday 3:05 PM PT):
+# Manual/fallback publish from this machine (full-fidelity Yahoo street
+# EPS). The scheduled weekly publish normally runs in GitHub Actions via
+# the private data store + NASDAQ incremental updates; use this when CI is
+# down or you want an off-cycle refresh. Optional launchd scheduling:
 #
 #   cp scripts/com.groverburger.open8585.plist ~/Library/LaunchAgents/
 #   launchctl load ~/Library/LaunchAgents/com.groverburger.open8585.plist
-#
-# Logs to ~/Library/Logs/open8585.log (see plist). Remove with launchctl
-# unload + delete the plist.
 set -e
 cd "$(dirname "$0")/.."
 
