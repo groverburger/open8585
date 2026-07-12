@@ -94,8 +94,10 @@ taxonomy.
 ## How close is it?
 
 Every constant above was set against captured samples of the commercial
-ratings, never by feel. Where it stands (full history in
-[STATUS.md](STATUS.md)):
+ratings, never by feel. **[docs/RATINGS.md](docs/RATINGS.md) is the full
+evidence file** — the three-way comparison of IBD's, Deepvue's, and this
+system's ratings, with every claim traced to captured data. Change history
+in [STATUS.md](STATUS.md). Where it stands:
 
 | rating | agreement with captured samples |
 |---|---|
