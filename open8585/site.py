@@ -18,6 +18,13 @@ from pathlib import Path
 import pandas as pd
 
 REPO_URL = "https://github.com/groverburger/open8585"
+PAGES_URL = "https://groverburger.github.io/open8585"
+TAGLINE = "The 85-85 growth screen, rebuilt in the open"
+DESCRIPTION = (
+    "A weekly screen for stocks rated 85+ on both earnings growth and price "
+    "strength. Proprietary Wall Street ratings reverse-engineered from public "
+    "data, validated against the originals, recomputed every Friday."
+)
 
 DISCLAIMER = (
     "Educational reconstruction of a proprietary methodology from public data; "
@@ -357,11 +364,20 @@ def csv_button(filename: str, raw_href: str) -> str:
     )
 
 
-def _page(title: str, body: str) -> str:
+def _page(title: str, body: str, path: str = "") -> str:
+    og = (
+        f'<meta name="description" content="{DESCRIPTION}">\n'
+        f'<meta property="og:title" content="{html.escape(title)}">\n'
+        f'<meta property="og:description" content="{DESCRIPTION}">\n'
+        f'<meta property="og:type" content="website">\n'
+        f'<meta property="og:url" content="{PAGES_URL}/{path}">\n'
+        f'<meta property="og:image" content="{PAGES_URL}/og.png">\n'
+        f'<meta name="twitter:card" content="summary_large_image">\n'
+    )
     return (
         "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        f"<title>{html.escape(title)}</title>\n<style>{_CSS}</style>\n</head>\n<body>\n"
+        f"<title>{html.escape(title)}</title>\n{og}<style>{_CSS}</style>\n</head>\n<body>\n"
         f"{body}\n<script>{_JS}</script>\n</body>\n</html>\n"
     )
 
@@ -384,8 +400,13 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
     if dropoffs:
         drop_note = ("<p class='meta'>dropped since last week: "
                      + ", ".join(sorted(dropoffs)) + "</p>")
+    from .charts import render_og_card
+    render_og_card(site_dir / "og.png", len(screen), int(rated["rs_rating"].notna().sum()))
+
     body = (
-        "<h1>The open 85-85 list</h1>"
+        f"<h1>The open 85-85 list</h1>"
+        f'<p class="meta">{TAGLINE.lower()} &middot; formulas public &middot; '
+        f'validated against the commercial originals</p>'
         f'<p class="meta">computed {stamp} · {len(screen)} stocks · '
         f'<a href="{REPO_URL}">methodology &amp; source</a> · '
         f'<a href="ratings.html">full ratings table</a></p>'
@@ -402,7 +423,7 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
         + f'<p class="disclaimer">{DISCLAIMER}</p>'
         + LIGHTBOX
     )
-    (site_dir / "index.html").write_text(_page("The open 85-85 list", body))
+    (site_dir / "index.html").write_text(_page(f"open8585 — {TAGLINE}", body))
 
     rsorted = rated.dropna(subset=["rs_rating"]).sort_values("rs_rating", ascending=False)
     rbody = (
@@ -416,7 +437,7 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
         + csv_button(f"ratings_{run_date}.csv", f"data/ratings_{run_date}.csv")
         + f'<p class="disclaimer">{DISCLAIMER}</p>'
     )
-    (site_dir / "ratings.html").write_text(_page("Full ratings — open 85-85", rbody))
+    (site_dir / "ratings.html").write_text(_page("open8585 — full ratings, every US stock", rbody, "ratings.html"))
 
     screen.to_csv(site_dir / "data" / f"screen_{run_date}.csv", index=False)
     keep = [c for c in ("symbol", "name", "industry", "industry_rank", "price", "pct_off_high",

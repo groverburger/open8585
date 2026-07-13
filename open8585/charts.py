@@ -221,3 +221,43 @@ def render_chart(symbol: str, name: str, daily: pd.DataFrame, spx: pd.Series,
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, facecolor=C["surface"])
     plt.close(fig)
+
+
+TAGLINE = "The 85-85 growth screen, rebuilt in the open"
+
+
+def render_og_card(out_path: Path, n_stocks: int, n_universe: int) -> None:
+    """1200x630 OpenGraph card: wordmark, tagline, weekly-bars motif."""
+    rng = np.random.default_rng(85)
+    fig = plt.figure(figsize=(12, 6.3), dpi=100)
+    fig.patch.set_facecolor(C["surface"])
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_axis_off()
+    ax.set_xlim(0, 12)
+    ax.set_ylim(0, 6.3)
+
+    # faint weekly-bars motif rising across the lower band
+    x = np.linspace(0.6, 11.4, 44)
+    trend = 1.1 + 1.5 * (x - 0.6) / 10.8
+    close = trend + np.cumsum(rng.normal(0, 0.08, len(x))) * 0.5
+    close -= close.min() - 1.0
+    hi = close + rng.uniform(0.06, 0.22, len(x))
+    lo = close - rng.uniform(0.06, 0.22, len(x))
+    up = np.r_[True, np.diff(close) >= 0]
+    for xi, h, l, c, u in zip(x, hi, lo, close, up):
+        col = C["up"] if u else C["down"]
+        ax.plot([xi, xi], [l, h], color=col, lw=2.2, alpha=0.35, solid_capstyle="round")
+        ax.plot([xi, xi + 0.09], [c, c], color=col, lw=2.2, alpha=0.35)
+
+    ax.text(0.6, 4.9, "open8585", fontsize=54, fontweight="bold", color=C["ink"])
+    ax.text(0.62, 4.25, TAGLINE, fontsize=21, color=C["ink2"])
+    ax.text(0.62, 3.55,
+            f"RS · EPS · A/D ratings for {n_universe:,} US stocks — formulas public,\n"
+            f"validated against the commercial originals, recomputed every Friday",
+            fontsize=14.5, color=C["muted"], linespacing=1.5)
+    ax.text(0.62, 0.42, f"{n_stocks} stocks on this week's list", fontsize=13,
+            color=C["ink2"])
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, facecolor=C["surface"])
+    plt.close(fig)
