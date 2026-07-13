@@ -71,3 +71,47 @@ market drift.
 
 The Deepvue-critical sections of docs/RATINGS.md ship only if P4-P6 hold.
 If any falsify, the doc is corrected first - that is the point of this file.
+
+---
+
+## RESULTS (scored 2026-07-13, captures in panel_captures_2026-07-13.txt)
+
+P1 (IBD RS +-3): NOT MET as written. Same-day MAE 4.3 (max 11), Spearman
+0.984. Agreement is tight in the top band (every IBD>=84 name within 0-6,
+most <=4) and looser mid-scale (MCK 11, COST 8, ACN 8) where percentile-pool
+composition bites hardest. Doc updated: scale-calibration claim narrowed to
+"within a few points, tightest where the methodology operates"; rank-
+equivalence and formula claims stand (0.98+).
+
+P2 (IBD EPS MAE <= 15): MET. MAE 9.1, slight +5.5 bias, outliers COIN (28)
+and ALAB (25 - the short-history case, now replicated at the same gap).
+Comparative: Deepvue EPS vs IBD on identical names: MAE 17.1.
+
+P3 (IBD A/D within ~1.5 letters; CNXC D-or-worse): FALSIFIED. Mean distance
+3.3 notches; IBD graded CNXC B despite the distribution week. Same-day
+Spearman ours-vs-IBD 0.49 (0.67 calibration figure did not hold out of
+sample).
+
+P4 (Deepvue compression): CONFIRMED AND ENRICHED. UCTT/GLW/ALAB print 86-88
+vs IBD 90-98. Full-panel pattern: DV runs -8.4 below IBD on top names and
++5.2 above on bottom names - compression from BOTH ends - while rank order
+matches IBD at Spearman 0.987. Deepvue is a monotone rescaling of the same
+ordering; absolute thresholds do not port.
+
+P5 (Deepvue A/D behaves close-location; CNXC C-or-better): FALSIFIED.
+Deepvue graded CNXC D. DV-vs-IBD A/D Spearman on the panel: 0.16. The
+close-location attribution is WITHDRAWN.
+
+P6 (FRGT/CHAI displayed % off high): NOT CAPTURED - remains open. The
+screen-membership + exchange-official-high evidence stands; the display-
+level confirmation does not exist yet and the doc must say so.
+
+P7 (consistency): MET for ALAB (IBD 99->98, DV 89->88). GDDY moved
+21->31 (IBD) across one session - consistent with a bounce plus bottom-of-
+scale rank sensitivity.
+
+Actions taken per the publication gate: docs/RATINGS.md A/D sections
+rewritten (family identifications withdrawn; A/D reported as the least
+reproducible rating, pairwise vendor correlations 0.16-0.49); RS section
+re-scoped; Deepvue RS finding upgraded to the replicated both-ends
+compression; EPS numbers updated to pooled 23-label figures.
