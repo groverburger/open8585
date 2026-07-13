@@ -1,0 +1,17 @@
+# Out-of-sample panel captures, 2026-07-13 (see preregistration_2026-07-13.md)
+# symbol ibd_rs ibd_eps ibd_ad dv_rs1m dv_rs3m dv_rs6m dv_rs12m dv_eps dv_ad
+UCTT 98 23 D- 73 80 91 88 57 A+
+GLW  90 90 E  75 53 86 86 73 D
+PTGX 93 25 A- 90 87 85 84 83 C
+SANM 93 95 E  19 49 78 81 90 A+
+CHRW 84 57 D  68 77 73 78 59 A+
+CASY 86 96 D- 28 50 75 78 70 A
+DE   56 29 E  63 48 55 56 28 D
+EME  58 91 E  39 29 46 59 65 D
+MCK  37 87 C  58 53 43 45 69 D
+COST 33 68 E  29 29 35 38 56 D
+ACN  6  65 C- 14 16 15 14 57 C
+COIN 10 12 D  56 29 16 16 8  A+
+ALAB 98 71 C  76 94 92 88 91 A+
+GDDY 31 82 A+ 82 73 41 28 70 B
+CNXC 10 41 B  34 41 23 17 28 D
