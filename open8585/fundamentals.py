@@ -63,11 +63,21 @@ def _series_to_records(s: pd.Series) -> list[list]:
     return out
 
 
+# When set, the bulk threaded fetch skips the street-EPS endpoint entirely:
+# thousands of threaded calls trip Yahoo's rate limit and would poison the
+# budget of the paced serial refresher (scripts/publish.py street_eps_refresh),
+# which is the one mechanism responsible for street data. Weekly CI sets this;
+# merge-preserve keeps existing street history intact either way.
+SKIP_BULK_STREET = bool(os.environ.get("OPEN8585_SKIP_BULK_STREET"))
+
+
 def _fetch_one(symbol: str) -> dict:
     t = yf.Ticker(symbol)
     rec: dict = {"symbol": symbol, "fetched_at": time.time()}
 
     try:
+        if SKIP_BULK_STREET:
+            raise LookupError("bulk street fetch disabled")
         ed = t.get_earnings_dates(limit=12)
         reported = ed["Reported EPS"].dropna() if ed is not None else pd.Series(dtype=float)
         rec["reported_eps"] = _series_to_records(reported.sort_index())

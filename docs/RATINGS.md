@@ -45,7 +45,11 @@ vendor strips differently. Two facts measured in this project set the stakes:
 
 Any comparison of rating systems that ignores whose earnings database sits
 underneath is measuring data vendors, not formulas. Keep that in mind for
-every EPS claim below.
+every EPS claim below. (It's also why the production system runs strictly
+one vendor per domain — NASDAQ as the stock directory, Yahoo for every
+number — with the street/GAAP split labeled per symbol; the cross-vendor
+measurements in this document are research findings, not live
+dependencies.)
 
 ---
 

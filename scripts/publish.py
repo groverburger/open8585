@@ -30,25 +30,37 @@ from open8585 import charts  # noqa: E402
 from open8585.screen import ScreenConfig, run_screen  # noqa: E402
 
 
-def street_eps_backfill(symbols: list[str], data_dir: Path, budget_minutes: float,
-                        only_missing: bool = True) -> None:
-    """Serially (re)fetch full Yahoo street-EPS histories via killable
-    subprocesses (the endpoint throttles and hangs; see
-    validation/backfill_one.py). With only_missing=False it refreshes the
-    given symbols outright - used for vendor-incompatible names where
-    NASDAQ quarters must not be mixed into Yahoo history."""
+def street_eps_refresh(data_dir: Path, budget_minutes: float) -> None:
+    """Refresh street EPS from Yahoo before rating, via killable
+    subprocesses (the endpoint rate-limits under load and can hang;
+    see validation/backfill_one.py).
+
+    Two tiers, most-stale-first within each:
+      1. symbols WITH street history whose newest quarter is >95 days old
+         (their next report has likely landed - the real weekly work)
+      2. symbols never successfully fetched, rechecked at most every 30
+         days (most have no analyst coverage anywhere; the stamp keeps
+         them from burning the budget weekly)
+    """
     fund = data_dir / "fundamentals"
-    todo = []
-    for s in dict.fromkeys(symbols):
-        p = fund / f"{s}.json"
-        if not p.exists():
-            continue
+    now = time.time()
+    tier1, tier2 = [], []
+    for p in fund.glob("*.json"):
         rec = json.loads(p.read_text())
-        if not only_missing or (not rec.get("reported_eps") and rec.get("q_eps")):
-            todo.append(s)
+        reported = rec.get("reported_eps") or []
+        if reported:
+            age = (pd.Timestamp.now() - pd.Timestamp(reported[-1][0])).days
+            if age > 95:
+                tier1.append((age, p.stem))
+        elif rec.get("q_eps"):
+            if now - rec.get("street_checked_at", 0) > 30 * 86400:
+                tier2.append((rec.get("street_checked_at", 0), p.stem))
+    todo = [s for _, s in sorted(tier1, reverse=True)] + [s for _, s in sorted(tier2)]
     if not todo:
+        print("[street] nothing due")
         return
-    print(f"[backfill] {len(todo)} symbols missing street EPS; budget {budget_minutes:.0f} min")
+    print(f"[street] {len(tier1)} stale + {len(tier2)} unchecked due; "
+          f"budget {budget_minutes:.0f} min")
     deadline = time.time() + budget_minutes * 60
     done = filled = 0
     for s in todo:
@@ -64,8 +76,8 @@ def street_eps_backfill(symbols: list[str], data_dir: Path, budget_minutes: floa
         except subprocess.TimeoutExpired:
             pass
         done += 1
-        time.sleep(0.5)
-    print(f"[backfill] attempted {done}, filled {filled}")
+        time.sleep(1.2)
+    print(f"[street] attempted {done}/{len(todo)}, refreshed {filled}")
 
 
 def eps_ttm_series(symbol: str, data_dir: Path) -> pd.Series | None:
@@ -94,25 +106,12 @@ def main() -> None:
     ap.add_argument("--refresh", action="store_true")
     ap.add_argument("--allow-degraded", action="store_true",
                     help="publish even when most EPS ratings fell back to GAAP")
-    ap.add_argument("--street-source", choices=("yahoo", "nasdaq"), default="yahoo",
-                    help="street-EPS updater: yahoo (24-quarter history; blocked from "
-                         "datacenter IPs) or nasdaq (last 4 quarters, works from CI; "
-                         "maintains a seeded history incrementally)")
     args = ap.parse_args()
 
-    if args.street_source == "nasdaq" and not args.skip_backfill:
+    if not args.skip_backfill:
         # refresh stale street EPS BEFORE rating, so quarters reported this
         # week are in this week's ratings
-        from open8585.nasdaq_eps import update_street_eps
-        cached = sorted(f.stem for f in (args.data_dir / "fundamentals").glob("*.json"))
-        incompatible = update_street_eps(cached, args.data_dir / "fundamentals",
-                                         args.backfill_minutes)
-        if incompatible:
-            # SBC-heavy names where NASDAQ (Zacks) and Yahoo conventions
-            # diverge: refresh their whole history from Yahoo instead
-            # (works from CI too - needs lxml - just rate-limited in bulk)
-            street_eps_backfill(incompatible, args.data_dir, budget_minutes=10,
-                                only_missing=False)
+        street_eps_refresh(args.data_dir, args.backfill_minutes)
 
     cfg = ScreenConfig(data_dir=args.data_dir, refresh=args.refresh)
     screen, rated = run_screen(cfg)
@@ -129,11 +128,6 @@ def main() -> None:
         sys.exit("ABORT: street-EPS share below 50% (expected ~85%) - the "
                  "fundamentals cache is degraded - check dependencies (lxml), "
                  "the data store, and rate limits, or pass --allow-degraded.")
-
-    if not args.skip_backfill and args.street_source == "yahoo":
-        universe_rotation = rated["symbol"].sample(frac=1, random_state=hash(run_date) % 2**32).tolist()
-        street_eps_backfill(screen["symbol"].tolist() + universe_rotation,
-                            args.data_dir, args.backfill_minutes)
 
     # Debuts are WEEK-over-week: "first appearance on the weekly list" is
     # the methodology's signal, so the baseline is the newest archive from

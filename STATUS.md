@@ -187,6 +187,21 @@ fallback. Lesson recorded: silent exception-swallowing turned a one-line
 dependency bug into a false architectural conclusion; probes must
 distinguish error classes.
 
+**One vendor per domain (2026-07-18).** The NASDAQ street-EPS path
+(nasdaq_eps.py, the vendor-compatibility gate, --street-source) is removed:
+NASDAQ is now solely the directory (universe + industries), Yahoo is every
+number. CI street maintenance is a paced serial Yahoo pass (two tiers:
+stale-covered names first, then 30-day rechecks of never-covered ones);
+bulk threaded street calls are disabled in CI (OPEN8585_SKIP_BULK_STREET)
+so they can't burn the rate budget. Data handling: the store's pre-purge
+state is tagged `pre-yahoo-purge` (history preserved); all 385 symbols
+whose street series diverged from the Yahoo-pure seed were re-sourced
+fresh from Yahoo, with empty refetches falling back to the last Yahoo-pure
+version rather than stripping data. Ratings verified unchanged for current
+list members. The cross-vendor study and the SBC convention findings
+remain in docs/RATINGS.md as research results; they're simply no longer a
+production dependency.
+
 ## Known gaps / next ideas
 
 - **85-85 index** (from the lecture): price-weighted index of list

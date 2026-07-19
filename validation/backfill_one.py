@@ -21,9 +21,15 @@ path = Path(__file__).parent.parent / "data" / "fundamentals" / f"{symbol}.json"
 rec = json.loads(path.read_text())
 ed = yf.Ticker(symbol).get_earnings_dates(limit=12)
 reported = ed["Reported EPS"].dropna() if ed is not None else pd.Series(dtype=float)
+import time
 if len(reported):
     rec["reported_eps"] = _series_to_records(reported.sort_index())
+    rec["street_checked_at"] = time.time()
     path.write_text(json.dumps(rec))
     print(f"{symbol}: {len(reported)} quarters")
 else:
+    # remember we looked: most micro-caps have no street coverage anywhere,
+    # and re-polling them every week wastes the refresh budget
+    rec["street_checked_at"] = time.time()
+    path.write_text(json.dumps(rec))
     print(f"{symbol}: empty")

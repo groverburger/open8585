@@ -113,12 +113,17 @@ disagree with *each other* about as much.
 
 ## Data sources
 
-Free, no API keys. NASDAQ's screener API supplies the universe and industry
-groups in one request; Yahoo Finance supplies ~3 years of daily prices and
-the earnings history. Yahoo's earnings-calendar endpoint rate-limits hard and
+Free, no API keys — and strictly **one vendor per domain**: NASDAQ's
+screener API is the *directory* (which stocks exist and their industry
+groups — no numbers), Yahoo Finance is *every number* (prices, volume,
+street EPS, GAAP statements). No cross-vendor reconciliation exists
+anywhere in the pipeline; within Yahoo, street EPS is preferred and GAAP is
+the labeled per-symbol fallback for the ~70% of micro-caps no analyst
+covers. Yahoo's earnings-calendar endpoint rate-limits hard and
 occasionally hangs mid-connection — the fetch layer isolates it in killable
-subprocesses and converges over successive runs, and the weekly GitHub Action
-keeps the cache warm between Fridays.
+subprocesses, refreshes stale symbols on a paced weekly pass, and the
+publish gate aborts rather than ship a list where street coverage has
+degraded.
 
 ## Layout
 

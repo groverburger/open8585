@@ -1,11 +1,13 @@
 name: weekly-screen
 
-# Fully autonomous weekly publish. Street-EPS history lives in a private
-# repo (groverburger/open8585-data, via DATA_DEPLOY_KEY) and is maintained
-# incrementally from NASDAQ's earnings-surprise API (probe: 39/40 from a
-# runner); Yahoo's earnings calendar also works from runners (needs lxml —
-# its absence once masqueraded as an IP block) and serves as fallback.
-# publish.py's quality gate aborts rather than ship GAAP-degraded ratings.
+# Fully autonomous weekly publish. One data vendor per domain: NASDAQ's
+# screener is the directory (universe + industries, no numbers); Yahoo is
+# every number (prices, street EPS, GAAP statements). Street-EPS history
+# lives in a private repo (groverburger/open8585-data, via
+# DATA_DEPLOY_KEY) as a durable cache and is refreshed by a paced serial
+# Yahoo pass (bulk street calls are disabled below - threaded fetches trip
+# the rate limit). The quality gate aborts rather than ship GAAP-degraded
+# ratings.
 on:
   schedule:
     # Fridays 3PM Pacific (22:00 UTC during PDT; 2PM PST in winter — both
@@ -22,6 +24,8 @@ env:
   # symbol); street EPS is maintained separately via the data store
   OPEN8585_FUND_TTL_DAYS: "6"
   OPEN8585_FUND_TTL_JITTER_DAYS: "15"
+  # street EPS is refreshed only by the paced serial pass in publish.py
+  OPEN8585_SKIP_BULK_STREET: "1"
 
 jobs:
   publish:
@@ -60,7 +64,7 @@ jobs:
 
       - name: Run screen and build site
         timeout-minutes: 150
-        run: python scripts/publish.py --street-source nasdaq
+        run: python scripts/publish.py
 
       - name: Save price/universe cache
         if: always()
