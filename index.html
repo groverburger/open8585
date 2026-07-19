@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>open8585 — The 85-85 growth screen, rebuilt in the open</title>
+<meta name="description" content="A weekly screen for stocks rated 85+ on both earnings growth and price strength. Proprietary Wall Street ratings reverse-engineered from public data, validated against the originals, recomputed every Friday.">
+<meta property="og:title" content="open8585 — The 85-85 growth screen, rebuilt in the open">
+<meta property="og:description" content="A weekly screen for stocks rated 85+ on both earnings growth and price strength. Proprietary Wall Street ratings reverse-engineered from public data, validated against the originals, recomputed every Friday.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://groverburger.github.io/open8585/">
+<meta property="og:image" content="https://groverburger.github.io/open8585/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+@font-face { font-family:"Berkeley Mono"; src:url("fonts/BerkeleyMono-Regular.woff2") format("woff2");
+             font-weight:400; font-display:swap; }
+@font-face { font-family:"Berkeley Mono"; src:url("fonts/BerkeleyMono-Bold.woff2") format("woff2");
+             font-weight:700; font-display:swap; }
+:root { --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --line:#e1e0d9;
+        --surface:#fcfcfb; --accent:#2a78d6; --down:#a83232; --up-t:#006300; }
+* { box-sizing:border-box; }
+body { font-family:"Berkeley Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+       color:var(--ink); background:var(--surface); margin:0; padding:18px 20px;
+       font-size:13px; }
+h1 { font-size:17px; margin:0 0 2px; }
+p { color:var(--ink2); line-height:1.45; max-width:88ch; margin:6px 0; }
+a { color:var(--accent); }
+.meta { color:var(--muted); font-size:12px; }
+input.filter { font:inherit; padding:5px 9px; margin:10px 0 6px; width:min(560px,100%);
+               border:1px solid var(--line); border-radius:4px;
+               background:var(--surface); color:var(--ink); }
+.hint { color:var(--muted); font-size:11px; margin:0 0 8px; }
+.count { color:var(--ink2); font-size:12px; margin-left:8px; }
+.tbl { overflow-x:auto; }
+table { border-collapse:collapse; font-variant-numeric:tabular-nums; }
+th,td { padding:3px 9px; text-align:right; border-bottom:1px solid var(--line);
+        white-space:nowrap; }
+th { color:var(--ink2); font-weight:700; position:sticky; top:0;
+     background:var(--surface); cursor:pointer; user-select:none; }
+th:after { content:""; }
+th.asc:after { content:" \2191"; } th.desc:after { content:" \2193"; }
+td.l, th.l { text-align:left; }
+tr:hover td { background:#f4f3f0; }
+.new { color:var(--up-t); font-weight:700; font-size:11px; }
+.pos { color:var(--up-t); } .neg { color:var(--down); }
+.disclaimer { color:var(--muted); font-size:11px; margin-top:28px; max-width:88ch; }
+td.t999 { text-decoration:underline dotted var(--muted); text-underline-offset:2px; cursor:help; }
+.foot-actions { margin-top:14px; }
+button.dlcsv { font:inherit; padding:5px 10px; border:1px solid var(--line); border-radius:4px;
+               background:var(--surface); color:var(--ink); cursor:pointer; }
+button.dlcsv:hover { background:#f4f3f0; }
+#lightbox { position:fixed; inset:0; background:rgba(11,11,11,0.55); display:flex;
+            align-items:center; justify-content:center; z-index:10; }
+#lightbox[hidden] { display:none; }
+.lb-inner { background:var(--surface); border-radius:6px; padding:10px 10px 6px;
+            max-width:min(96vw, 1000px); box-shadow:0 8px 40px rgba(11,11,11,0.35); }
+.lb-inner img { display:block; max-width:100%; max-height:82vh; }
+.lb-cap { display:flex; justify-content:space-between; color:var(--muted);
+          font-size:11px; padding:6px 2px 2px; }
+.lb-cap a { color:var(--accent); }
+</style>
+</head>
+<body>
+<h1>The open 85-85 list</h1><p class="meta">the 85-85 growth screen, rebuilt in the open &middot; formulas public &middot; validated against the commercial originals</p><p class="meta">computed 2026-07-18 23:15 PDT · 105 stocks · <a href="https://github.com/groverburger/open8585">methodology &amp; source</a> · <a href="ratings.html">full ratings table</a></p><p>Stocks with EPS and RS ratings of 85+ (percentile-ranked 1&ndash;99 against the full US stock universe), priced $10+, within 15% of their 52-week closing high, average volume 10,000+ shares. NEW marks first appearance vs the prior week's list &mdash; the methodology's highest-signal event. Symbols link to weekly charts.</p><input class="filter" placeholder="filter: e.g.  semiconductor rs>=90 ad>=B-" spellcheck="false"><span class="count"></span><p class="hint">bare words match symbol/name/industry &middot; col&gt;=value filters numerically (keys: rs, eps, epsrs, ad, price&hellip;) &middot; -term excludes (quote phrases: -&quot;real estate&quot; drops REITs) &middot; expressions stack with AND &middot; click headers to sort &middot; the query lives in the URL, bookmark it</p><p class='meta'>dropped since last week: ALAB, ALGT, AROC, AYA, BHE, BLZE, BMA, CAT, CRDO, ESE, ESOA, GNK, KEYS, KN, LSCC, MD, NEXA, NPO, NVT, PGNY, SEI, SIMO, SNX, SPHR, TSM, VIRT</p><div class="tbl"><table><thead><tr><th class="l" data-key="symbol" data-type="text">Symbol</th><th class="l" data-key="name" data-type="text">Company</th><th class="l" data-key="industry" data-type="text">Industry Group</th><th class="" data-key="price" data-type="num">Price</th><th class="" data-key="chg" data-type="num">Chg%</th><th class="" data-key="volchg" data-type="num">Vol%</th><th class="" data-key="epschg" data-type="num">EPS%</th><th class="" data-key="rs" data-type="num">RS</th><th class="" data-key="eps" data-type="num">EPS</th><th class="" data-key="epsrs" data-type="num">EPS+RS</th><th class="" data-key="ad" data-type="grade">A/D</th></tr></thead><tbody>
+<tr><td class="l" data-v="DK"><a href="charts/DK.png">DK</a></td><td class="l">Delek US Holdings Inc. Common Stock</td><td class="l">Integrated oil Companies</td><td data-v="63.25">63.25</td><td class="pos" data-v="2.70">+2.7</td><td class="pos" data-v="22.63">+22.6</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="96">96</td><td data-v="96">96</td><td data-v="192">192</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="DVA"><a href="charts/DVA.png">DVA</a></td><td class="l">DaVita Inc. Common Stock</td><td class="l">Misc Health and Biotechnology Serv</td><td data-v="236.97">236.97</td><td class="pos" data-v="1.26">+1.3</td><td class="neg" data-v="-39.34">-39.3</td><td data-v="44">44</td><td data-v="95">95</td><td data-v="91">91</td><td data-v="186">186</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="MPC"><a href="charts/MPC.png">MPC</a></td><td class="l">Marathon Petroleum Corporation Commo</td><td class="l">Integrated oil Companies</td><td data-v="312.60">312.60</td><td class="pos" data-v="2.21">+2.2</td><td class="neg" data-v="-10.76">-10.8</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="93">93</td><td data-v="95">95</td><td data-v="188">188</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="PSX"><a href="charts/PSX.png">PSX</a> <span class="new">NEW</span></td><td class="l">Phillips 66 Common Stock</td><td class="l">Integrated oil Companies</td><td data-v="206.86">206.86</td><td class="pos" data-v="2.75">+2.8</td><td class="neg" data-v="-9.25">-9.3</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="89">89</td><td data-v="96">96</td><td data-v="185">185</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="VLO"><a href="charts/VLO.png">VLO</a> <span class="new">NEW</span></td><td class="l">Valero Energy Corporation Common Sto</td><td class="l">Integrated oil Companies</td><td data-v="309.65">309.65</td><td class="pos" data-v="3.13">+3.1</td><td class="neg" data-v="-15.88">-15.9</td><td data-v="374">374</td><td data-v="93">93</td><td data-v="98">98</td><td data-v="191">191</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="AMD"><a href="charts/AMD.png">AMD</a></td><td class="l">Advanced Micro Devices Inc. Common S</td><td class="l">Semiconductors</td><td data-v="495.76">495.76</td><td class="neg" data-v="-1.03">-1.0</td><td class="neg" data-v="-2.60">-2.6</td><td data-v="43">43</td><td data-v="97">97</td><td data-v="90">90</td><td data-v="187">187</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="ASX"><a href="charts/ASX.png">ASX</a></td><td class="l">ASE Technology Holding Co. Ltd. Amer</td><td class="l">Semiconductors</td><td data-v="38.41">38.41</td><td class="neg" data-v="-2.78">-2.8</td><td class="neg" data-v="-3.99">-4.0</td><td data-v="100">100</td><td data-v="98">98</td><td data-v="90">90</td><td data-v="188">188</td><td data-v="D">D</td></tr>
+<tr><td class="l" data-v="ARW"><a href="charts/ARW.png">ARW</a></td><td class="l">Arrow Electronics Inc. Common Stock</td><td class="l">Electronic Components</td><td data-v="206.61">206.61</td><td class="pos" data-v="1.23">+1.2</td><td class="neg" data-v="-39.07">-39.1</td><td data-v="190">190</td><td data-v="90">90</td><td data-v="88">88</td><td data-v="178">178</td><td data-v="D+">D+</td></tr>
+<tr><td class="l" data-v="AVT"><a href="charts/AVT.png">AVT</a></td><td class="l">Avnet Inc. Common Stock</td><td class="l">Electronic Components</td><td data-v="85.65">85.65</td><td class="pos" data-v="1.05">+1.1</td><td class="neg" data-v="-32.09">-32.1</td><td data-v="76">76</td><td data-v="89">89</td><td data-v="87">87</td><td data-v="176">176</td><td data-v="C-">C-</td></tr>
+<tr><td class="l" data-v="BAP"><a href="charts/BAP.png">BAP</a> <span class="new">NEW</span></td><td class="l">Credicorp Ltd. Common Stock</td><td class="l">Commercial Banks</td><td data-v="390.58">390.58</td><td class="pos" data-v="0.81">+0.8</td><td class="neg" data-v="-48.58">-48.6</td><td data-v="25">25</td><td data-v="88">88</td><td data-v="94">94</td><td data-v="182">182</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="PGC"><a href="charts/PGC.png">PGC</a></td><td class="l">Peapack-Gladstone Financial Corporat</td><td class="l">Commercial Banks</td><td data-v="46.10">46.10</td><td class="neg" data-v="-2.37">-2.4</td><td class="pos" data-v="39.35">+39.3</td><td data-v="86">86</td><td data-v="88">88</td><td data-v="85">85</td><td data-v="173">173</td><td data-v="D">D</td></tr>
+<tr><td class="l" data-v="RY"><a href="charts/RY.png">RY</a> <span class="new">NEW</span></td><td class="l">Royal Bank Of Canada Common Stock</td><td class="l">Commercial Banks</td><td data-v="215.43">215.43</td><td class="neg" data-v="-0.30">-0.3</td><td class="neg" data-v="-20.10">-20.1</td><td data-v="25">25</td><td data-v="86">86</td><td data-v="85">85</td><td data-v="171">171</td><td data-v="C">C</td></tr>
+<tr><td class="l" data-v="VBNK"><a href="charts/VBNK.png">VBNK</a></td><td class="l">VersaBank Common Shares</td><td class="l">Commercial Banks</td><td data-v="21.15">21.15</td><td class="neg" data-v="-1.58">-1.6</td><td class="pos" data-v="72.47">+72.5</td><td data-v="47">47</td><td data-v="90">90</td><td data-v="86">86</td><td data-v="176">176</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="ECO"><a href="charts/ECO.png">ECO</a></td><td class="l">Okeanis Eco Tankers Corp. Common Sto</td><td class="l">Marine Transportation</td><td data-v="53.88">53.88</td><td class="neg" data-v="-5.09">-5.1</td><td class="pos" data-v="45.40">+45.4</td><td data-v="497">497</td><td data-v="93">93</td><td data-v="97">97</td><td data-v="190">190</td><td data-v="D">D</td></tr>
+<tr><td class="l" data-v="FRO"><a href="charts/FRO.png">FRO</a></td><td class="l">Frontline Plc Ordinary Shares</td><td class="l">Marine Transportation</td><td data-v="36.49">36.49</td><td class="neg" data-v="-1.83">-1.8</td><td class="neg" data-v="-35.57">-35.6</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="90">90</td><td data-v="88">88</td><td data-v="178">178</td><td data-v="D">D</td></tr>
+<tr><td class="l" data-v="HSHP"><a href="charts/HSHP.png">HSHP</a></td><td class="l">Himalaya Shipping Ltd. Common Shares</td><td class="l">Marine Transportation</td><td data-v="14.59">14.59</td><td class="neg" data-v="-3.70">-3.7</td><td class="neg" data-v="-1.97">-2.0</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="93">93</td><td data-v="99">99</td><td data-v="192">192</td><td data-v="D">D</td></tr>
+<tr><td class="l" data-v="INSW"><a href="charts/INSW.png">INSW</a> <span class="new">NEW</span></td><td class="l">International Seaways Inc. Common St</td><td class="l">Marine Transportation</td><td data-v="86.76">86.76</td><td class="neg" data-v="-1.67">-1.7</td><td class="neg" data-v="-34.20">-34.2</td><td data-v="387">387</td><td data-v="95">95</td><td data-v="96">96</td><td data-v="191">191</td><td data-v="D+">D+</td></tr>
+<tr><td class="l" data-v="LPG"><a href="charts/LPG.png">LPG</a> <span class="new">NEW</span></td><td class="l">Dorian LPG Ltd. Common Stock</td><td class="l">Marine Transportation</td><td data-v="41.03">41.03</td><td class="neg" data-v="-0.65">-0.7</td><td class="neg" data-v="-5.28">-5.3</td><td data-v="656">656</td><td data-v="88">88</td><td data-v="94">94</td><td data-v="182">182</td><td data-v="D+">D+</td></tr>
+<tr><td class="l" data-v="SHIP"><a href="charts/SHIP.png">SHIP</a> <span class="new">NEW</span></td><td class="l">Seanergy Maritime Holdings Corp. Com</td><td class="l">Marine Transportation</td><td data-v="14.01">14.01</td><td class="neg" data-v="-5.40">-5.4</td><td class="neg" data-v="-14.77">-14.8</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="90">90</td><td data-v="89">89</td><td data-v="179">179</td><td data-v="D+">D+</td></tr>
+<tr><td class="l" data-v="FNRN"><a href="charts/FNRN.png">FNRN</a></td><td class="l">First Northern Community Bancorp Com</td><td class="l">Savings Institutions</td><td data-v="18.30">18.30</td><td class="neg" data-v="-1.72">-1.7</td><td class="neg" data-v="-34.76">-34.8</td><td data-v="73">73</td><td data-v="88">88</td><td data-v="85">85</td><td data-v="173">173</td><td data-v="D">D</td></tr>
+<tr><td class="l" data-v="ALRS"><a href="charts/ALRS.png">ALRS</a> <span class="new">NEW</span></td><td class="l">Alerus Financial Corporation Common </td><td class="l">Major Banks</td><td data-v="32.15">32.15</td><td class="neg" data-v="-1.35">-1.4</td><td class="neg" data-v="-24.11">-24.1</td><td data-v="71">71</td><td data-v="86">86</td><td data-v="86">86</td><td data-v="172">172</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="PCB"><a href="charts/PCB.png">PCB</a> <span class="new">NEW</span></td><td class="l">PCB Bancorp Common Stock</td><td class="l">Major Banks</td><td data-v="29.81">29.81</td><td class="neg" data-v="-2.65">-2.6</td><td class="pos" data-v="68.63">+68.6</td><td data-v="40">40</td><td data-v="85">85</td><td data-v="91">91</td><td data-v="176">176</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="MYE"><a href="charts/MYE.png">MYE</a></td><td class="l">Myers Industries Inc. Common Stock</td><td class="l">Plastic Products</td><td data-v="31.11">31.11</td><td class="neg" data-v="-0.67">-0.7</td><td class="neg" data-v="-19.52">-19.5</td><td data-v="100">100</td><td data-v="94">94</td><td data-v="90">90</td><td data-v="184">184</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="TRGP"><a href="charts/TRGP.png">TRGP</a></td><td class="l">Targa Resources Inc. Common Stock</td><td class="l">Natural Gas Distribution</td><td data-v="282.91">282.91</td><td class="pos" data-v="0.94">+0.9</td><td class="neg" data-v="-8.82">-8.8</td><td data-v="46">46</td><td data-v="90">90</td><td data-v="98">98</td><td data-v="188">188</td><td data-v="C-">C-</td></tr>
+<tr><td class="l" data-v="PARR"><a href="charts/PARR.png">PARR</a> <span class="new">NEW</span></td><td class="l">Par Pacific Holdings Inc.  Common St</td><td class="l">Oil &amp; Gas Production</td><td data-v="76.25">76.25</td><td class="pos" data-v="3.08">+3.1</td><td class="neg" data-v="-21.71">-21.7</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="95">95</td><td data-v="91">91</td><td data-v="186">186</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="CHEF"><a href="charts/CHEF.png">CHEF</a></td><td class="l">The Chefs&#x27; Warehouse Inc. Common Sto</td><td class="l">Food Distributors</td><td data-v="97.09">97.09</td><td class="neg" data-v="-5.15">-5.1</td><td class="pos" data-v="16.48">+16.5</td><td data-v="60">60</td><td data-v="92">92</td><td data-v="94">94</td><td data-v="186">186</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="LTH"><a href="charts/LTH.png">LTH</a></td><td class="l">Life Time Group Holdings Inc. Common</td><td class="l">Hotels/Resorts</td><td data-v="42.15">42.15</td><td class="neg" data-v="-1.61">-1.6</td><td class="neg" data-v="-21.43">-21.4</td><td data-v="8">8</td><td data-v="90">90</td><td data-v="92">92</td><td data-v="182">182</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="XHR"><a href="charts/XHR.png">XHR</a></td><td class="l">Xenia Hotels &amp; Resorts Inc. Common S</td><td class="l">Hotels/Resorts</td><td data-v="21.00">21.00</td><td class="pos" data-v="1.20">+1.2</td><td class="neg" data-v="-40.21">-40.2</td><td data-v="75">75</td><td data-v="90">90</td><td data-v="89">89</td><td data-v="179">179</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="FTI"><a href="charts/FTI.png">FTI</a></td><td class="l">TechnipFMC plc Ordinary Share</td><td class="l">Oil and Gas Field Machinery</td><td data-v="72.07">72.07</td><td class="pos" data-v="0.08">+0.1</td><td class="neg" data-v="-54.55">-54.5</td><td data-v="94">94</td><td data-v="90">90</td><td data-v="93">93</td><td data-v="183">183</td><td data-v="D">D</td></tr>
+<tr><td class="l" data-v="DGII"><a href="charts/DGII.png">DGII</a></td><td class="l">Digi International Inc. Common Stock</td><td class="l">Computer Communications Equipment</td><td data-v="63.92">63.92</td><td class="pos" data-v="0.11">+0.1</td><td class="neg" data-v="-23.61">-23.6</td><td data-v="22">22</td><td data-v="90">90</td><td data-v="87">87</td><td data-v="177">177</td><td data-v="D+">D+</td></tr>
+<tr><td class="l" data-v="VCYT"><a href="charts/VCYT.png">VCYT</a></td><td class="l">Veracyte Inc. Common Stock</td><td class="l">Medical Specialities</td><td data-v="59.13">59.13</td><td class="neg" data-v="-0.15">-0.2</td><td class="pos" data-v="51.71">+51.7</td><td data-v="68">68</td><td data-v="95">95</td><td data-v="87">87</td><td data-v="182">182</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="HG"><a href="charts/HG.png">HG</a> <span class="new">NEW</span></td><td class="l">Hamilton Insurance Group Ltd. Class </td><td class="l">Property-Casualty Insurers</td><td data-v="34.94">34.94</td><td class="pos" data-v="1.36">+1.4</td><td class="neg" data-v="-45.23">-45.2</td><td data-v="70">70</td><td data-v="86">86</td><td data-v="94">94</td><td data-v="180">180</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="PLGO"><a href="charts/PLGO.png">PLGO</a> <span class="new">NEW</span></td><td class="l">Pelagos Insurance Capital Limited Co</td><td class="l">Property-Casualty Insurers</td><td data-v="25.40">25.40</td><td class="neg" data-v="-0.16">-0.2</td><td class="neg" data-v="-27.59">-27.6</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="86">86</td><td data-v="98">98</td><td data-v="184">184</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="ACA"><a href="charts/ACA.png">ACA</a></td><td class="l">Arcosa Inc. Common Stock</td><td class="l">Metal Fabrications</td><td data-v="145.01">145.01</td><td class="pos" data-v="0.01">+0.0</td><td class="pos" data-v="222.80">+222.8</td><td data-v="65">65</td><td data-v="87">87</td><td data-v="93">93</td><td data-v="180">180</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="BTSG"><a href="charts/BTSG.png">BTSG</a></td><td class="l">BrightSpring Health Services Inc. Co</td><td class="l">Medical/Nursing Services</td><td data-v="70.69">70.69</td><td class="pos" data-v="3.71">+3.7</td><td class="neg" data-v="-1.49">-1.5</td><td data-v="105">105</td><td data-v="97">97</td><td data-v="98">98</td><td data-v="195">195</td><td data-v="C+">C+</td></tr>
+<tr><td class="l" data-v="HLIO"><a href="charts/HLIO.png">HLIO</a></td><td class="l">Helios Technologies Inc. Common Stoc</td><td class="l">Metal Fabrications</td><td data-v="81.15">81.15</td><td class="neg" data-v="-0.39">-0.4</td><td class="neg" data-v="-47.31">-47.3</td><td data-v="82">82</td><td data-v="91">91</td><td data-v="87">87</td><td data-v="178">178</td><td data-v="D">D</td></tr>
+<tr><td class="l" data-v="INNV"><a href="charts/INNV.png">INNV</a></td><td class="l">InnovAge Holding Corp. Common Stock</td><td class="l">Medical/Nursing Services</td><td data-v="11.50">11.50</td><td class="neg" data-v="-3.12">-3.1</td><td class="neg" data-v="-16.76">-16.8</td><td data-v="750">750</td><td data-v="96">96</td><td data-v="86">86</td><td data-v="182">182</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="LFST"><a href="charts/LFST.png">LFST</a></td><td class="l">LifeStance Health Group Inc. Common </td><td class="l">Medical/Nursing Services</td><td data-v="11.58">11.58</td><td class="pos" data-v="2.57">+2.6</td><td class="neg" data-v="-7.05">-7.1</td><td data-v="40">40</td><td data-v="96">96</td><td data-v="89">89</td><td data-v="185">185</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="PNTG"><a href="charts/PNTG.png">PNTG</a> <span class="new">NEW</span></td><td class="l">The Pennant Group Inc. Common Stock</td><td class="l">Medical/Nursing Services</td><td data-v="41.95">41.95</td><td class="pos" data-v="0.58">+0.6</td><td class="neg" data-v="-17.57">-17.6</td><td data-v="19">19</td><td data-v="91">91</td><td data-v="92">92</td><td data-v="183">183</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="VMI"><a href="charts/VMI.png">VMI</a> <span class="new">NEW</span></td><td class="l">Valmont Industries Inc. Common Stock</td><td class="l">Metal Fabrications</td><td data-v="531.66">531.66</td><td class="neg" data-v="-1.27">-1.3</td><td class="neg" data-v="-1.57">-1.6</td><td data-v="28">28</td><td data-v="85">85</td><td data-v="91">91</td><td data-v="176">176</td><td data-v="C-">C-</td></tr>
+<tr><td class="l" data-v="CBL"><a href="charts/CBL.png">CBL</a></td><td class="l">CBL &amp; Associates Properties Inc. Com</td><td class="l">Real Estate Investment Trusts</td><td data-v="55.27">55.27</td><td class="pos" data-v="1.94">+1.9</td><td class="pos" data-v="11.80">+11.8</td><td data-v="448">448</td><td data-v="93">93</td><td data-v="97">97</td><td data-v="190">190</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="CXW"><a href="charts/CXW.png">CXW</a></td><td class="l">CoreCivic Inc. Common Stock</td><td class="l">Real Estate Investment Trusts</td><td data-v="30.65">30.65</td><td class="pos" data-v="0.00">+0.0</td><td class="neg" data-v="-26.87">-26.9</td><td data-v="74">74</td><td data-v="91">91</td><td data-v="95">95</td><td data-v="186">186</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="OUT"><a href="charts/OUT.png">OUT</a></td><td class="l">OUTFRONT Media Inc. Common Stock</td><td class="l">Real Estate Investment Trusts</td><td data-v="33.21">33.21</td><td class="neg" data-v="-0.60">-0.6</td><td class="neg" data-v="-55.07">-55.1</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="90">90</td><td data-v="91">91</td><td data-v="181">181</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="PSTL"><a href="charts/PSTL.png">PSTL</a></td><td class="l">Postal Realty Trust Inc. Class A Com</td><td class="l">Real Estate Investment Trusts</td><td data-v="24.05">24.05</td><td class="neg" data-v="-1.92">-1.9</td><td class="neg" data-v="-5.34">-5.3</td><td data-v="83">83</td><td data-v="88">88</td><td data-v="97">97</td><td data-v="185">185</td><td data-v="C">C</td></tr>
+<tr><td class="l" data-v="ATI"><a href="charts/ATI.png">ATI</a></td><td class="l">ATI Inc. Common Stock</td><td class="l">Steel/Iron Ore</td><td data-v="186.17">186.17</td><td class="pos" data-v="0.36">+0.4</td><td class="neg" data-v="-31.48">-31.5</td><td data-v="39">39</td><td data-v="93">93</td><td data-v="97">97</td><td data-v="190">190</td><td data-v="C">C</td></tr>
+<tr><td class="l" data-v="CRS"><a href="charts/CRS.png">CRS</a></td><td class="l">Carpenter Technology Corporation Com</td><td class="l">Steel/Iron Ore</td><td data-v="557.77">557.77</td><td class="pos" data-v="0.61">+0.6</td><td class="pos" data-v="2.35">+2.3</td><td data-v="47">47</td><td data-v="94">94</td><td data-v="98">98</td><td data-v="192">192</td><td data-v="C">C</td></tr>
+<tr><td class="l" data-v="MT"><a href="charts/MT.png">MT</a> <span class="new">NEW</span></td><td class="l">Arcelor Mittal NY Registry Shares NE</td><td class="l">Steel/Iron Ore</td><td data-v="66.45">66.45</td><td class="pos" data-v="1.64">+1.6</td><td class="neg" data-v="-13.95">-13.9</td><td data-v="-28">-28</td><td data-v="89">89</td><td data-v="87">87</td><td data-v="176">176</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="NUE"><a href="charts/NUE.png">NUE</a> <span class="new">NEW</span></td><td class="l">Nucor Corporation Common Stock</td><td class="l">Steel/Iron Ore</td><td data-v="236.61">236.61</td><td class="pos" data-v="0.40">+0.4</td><td class="neg" data-v="-4.65">-4.6</td><td data-v="319">319</td><td data-v="89">89</td><td data-v="87">87</td><td data-v="176">176</td><td data-v="D-">D-</td></tr>
+<tr><td class="l" data-v="NWPX"><a href="charts/NWPX.png">NWPX</a></td><td class="l">NWPX Infrastructure Inc. Common Stoc</td><td class="l">Steel/Iron Ore</td><td data-v="138.20">138.20</td><td class="neg" data-v="-0.66">-0.7</td><td class="neg" data-v="-9.52">-9.5</td><td data-v="177">177</td><td data-v="98">98</td><td data-v="88">88</td><td data-v="186">186</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="GEO"><a href="charts/GEO.png">GEO</a></td><td class="l">Geo Group Inc (The) REIT</td><td class="l">Homebuilding</td><td data-v="29.46">29.46</td><td class="neg" data-v="-0.54">-0.5</td><td class="neg" data-v="-6.34">-6.3</td><td data-v="107">107</td><td data-v="91">91</td><td data-v="85">85</td><td data-v="176">176</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="GRC"><a href="charts/GRC.png">GRC</a></td><td class="l">Gorman-Rupp Company (The) Common Sto</td><td class="l">Fluid Controls</td><td data-v="79.74">79.74</td><td class="neg" data-v="-1.26">-1.3</td><td class="pos" data-v="26.80">+26.8</td><td data-v="48">48</td><td data-v="91">91</td><td data-v="91">91</td><td data-v="182">182</td><td data-v="E+">E+</td></tr>
+<tr><td class="l" data-v="REX"><a href="charts/REX.png">REX</a> <span class="new">NEW</span></td><td class="l">REX American Resources Corporation</td><td class="l">Major Chemicals</td><td data-v="47.32">47.32</td><td class="pos" data-v="2.65">+2.6</td><td class="neg" data-v="-17.11">-17.1</td><td data-v="120">120</td><td data-v="85">85</td><td data-v="93">93</td><td data-v="178">178</td><td data-v="C">C</td></tr>
+<tr><td class="l" data-v="FTNT"><a href="charts/FTNT.png">FTNT</a></td><td class="l">Fortinet Inc. Common Stock</td><td class="l">Computer peripheral equipment</td><td data-v="161.61">161.61</td><td class="pos" data-v="0.52">+0.5</td><td class="neg" data-v="-13.34">-13.3</td><td data-v="41">41</td><td data-v="96">96</td><td data-v="91">91</td><td data-v="187">187</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="PANW"><a href="charts/PANW.png">PANW</a></td><td class="l">Palo Alto Networks Inc. Common Stock</td><td class="l">Computer peripheral equipment</td><td data-v="358.68">358.68</td><td class="pos" data-v="1.32">+1.3</td><td class="neg" data-v="-9.19">-9.2</td><td data-v="6">6</td><td data-v="96">96</td><td data-v="90">90</td><td data-v="186">186</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="TXG"><a href="charts/TXG.png">TXG</a></td><td class="l">10x Genomics Inc. Class A Common Sto</td><td class="l">Biotechnology: Laboratory Analytic</td><td data-v="43.74">43.74</td><td class="neg" data-v="-1.66">-1.7</td><td class="neg" data-v="-22.09">-22.1</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="98">98</td><td data-v="96">96</td><td data-v="194">194</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="HCSG"><a href="charts/HCSG.png">HCSG</a> <span class="new">NEW</span></td><td class="l">Healthcare Services Group Inc. Commo</td><td class="l">Hospital/Nursing Management</td><td data-v="25.31">25.31</td><td class="pos" data-v="1.28">+1.3</td><td class="neg" data-v="-14.07">-14.1</td><td data-v="61">61</td><td data-v="90">90</td><td data-v="86">86</td><td data-v="176">176</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="DELL"><a href="charts/DELL.png">DELL</a></td><td class="l">Dell Technologies Inc. Class C Commo</td><td class="l">Computer Manufacturing</td><td data-v="396.34">396.34</td><td class="pos" data-v="1.27">+1.3</td><td class="neg" data-v="-24.50">-24.5</td><td data-v="214">214</td><td data-v="98">98</td><td data-v="91">91</td><td data-v="189">189</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="ABX"><a href="charts/ABX.png">ABX</a></td><td class="l">Abacus Global Management Inc. Class </td><td class="l">Investment Managers</td><td data-v="10.36">10.36</td><td class="neg" data-v="-1.43">-1.4</td><td class="pos" data-v="25.71">+25.7</td><td data-v="11">11</td><td data-v="89">89</td><td data-v="90">90</td><td data-v="179">179</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="AMG"><a href="charts/AMG.png">AMG</a> <span class="new">NEW</span></td><td class="l">Affiliated Managers Group Inc. Commo</td><td class="l">Investment Managers</td><td data-v="369.83">369.83</td><td class="neg" data-v="-1.85">-1.8</td><td class="neg" data-v="-30.70">-30.7</td><td data-v="58">58</td><td data-v="86">86</td><td data-v="92">92</td><td data-v="178">178</td><td data-v="C+">C+</td></tr>
+<tr><td class="l" data-v="VCTR"><a href="charts/VCTR.png">VCTR</a> <span class="new">NEW</span></td><td class="l">Victory Capital Holdings Inc. Class </td><td class="l">Investment Managers</td><td data-v="98.52">98.52</td><td class="neg" data-v="-2.05">-2.0</td><td class="pos" data-v="7.85">+7.8</td><td data-v="34">34</td><td data-v="88">88</td><td data-v="91">91</td><td data-v="179">179</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="ASML"><a href="charts/ASML.png">ASML</a> <span class="new">NEW</span></td><td class="l">ASML Holding N.V. New York Registry </td><td class="l">Industrial Machinery/Components</td><td data-v="1747.58">1,747.58</td><td class="neg" data-v="-2.09">-2.1</td><td class="pos" data-v="8.59">+8.6</td><td data-v="28">28</td><td data-v="92">92</td><td data-v="87">87</td><td data-v="179">179</td><td data-v="C">C</td></tr>
+<tr><td class="l" data-v="GEV"><a href="charts/GEV.png">GEV</a></td><td class="l">GE Vernova Inc. Common Stock</td><td class="l">Industrial Machinery/Components</td><td data-v="1057.84">1,057.84</td><td class="pos" data-v="2.09">+2.1</td><td class="pos" data-v="17.00">+17.0</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="89">89</td><td data-v="94">94</td><td data-v="183">183</td><td data-v="D+">D+</td></tr>
+<tr><td class="l" data-v="TWIN"><a href="charts/TWIN.png">TWIN</a> <span class="new">NEW</span></td><td class="l">Twin Disc Incorporated Common Stock</td><td class="l">Industrial Machinery/Components</td><td data-v="22.59">22.59</td><td class="pos" data-v="1.30">+1.3</td><td class="neg" data-v="-32.21">-32.2</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="92">92</td><td data-v="89">89</td><td data-v="181">181</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="MRX"><a href="charts/MRX.png">MRX</a></td><td class="l">Marex Group Limited Ordinary Shares</td><td class="l">Investment Bankers/Brokers/Service</td><td data-v="60.16">60.16</td><td class="neg" data-v="-5.33">-5.3</td><td class="neg" data-v="-9.13">-9.1</td><td data-v="63">63</td><td data-v="89">89</td><td data-v="97">97</td><td data-v="186">186</td><td data-v="C-">C-</td></tr>
+<tr><td class="l" data-v="ETON"><a href="charts/ETON.png">ETON</a></td><td class="l">Eton Pharmaceuticals Inc. Common Sto</td><td class="l">Biotechnology: Pharmaceutical Prep</td><td data-v="42.32">42.32</td><td class="pos" data-v="13.79">+13.8</td><td class="pos" data-v="192.89">+192.9</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="98">98</td><td data-v="96">96</td><td data-v="194">194</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="INDV"><a href="charts/INDV.png">INDV</a></td><td class="l">Indivior Pharmaceuticals Inc. Common</td><td class="l">Biotechnology: Pharmaceutical Prep</td><td data-v="40.54">40.54</td><td class="neg" data-v="-0.12">-0.1</td><td class="neg" data-v="-47.19">-47.2</td><td data-v="134">134</td><td data-v="92">92</td><td data-v="97">97</td><td data-v="189">189</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="KNSA"><a href="charts/KNSA.png">KNSA</a></td><td class="l">Kiniksa Pharmaceuticals Internationa</td><td class="l">Biotechnology: Pharmaceutical Prep</td><td data-v="63.95">63.95</td><td class="pos" data-v="4.65">+4.6</td><td class="neg" data-v="-4.03">-4.0</td><td data-v="145">145</td><td data-v="93">93</td><td data-v="94">94</td><td data-v="187">187</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="LGND"><a href="charts/LGND.png">LGND</a></td><td class="l">Ligand Pharmaceuticals Incorporated </td><td class="l">Biotechnology: Pharmaceutical Prep</td><td data-v="303.39">303.39</td><td class="pos" data-v="2.34">+2.3</td><td class="neg" data-v="-25.33">-25.3</td><td data-v="23">23</td><td data-v="93">93</td><td data-v="86">86</td><td data-v="179">179</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="LQDA"><a href="charts/LQDA.png">LQDA</a></td><td class="l">Liquidia Corporation Common Stock</td><td class="l">Biotechnology: Pharmaceutical Prep</td><td data-v="79.94">79.94</td><td class="pos" data-v="6.20">+6.2</td><td class="neg" data-v="-43.50">-43.5</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="99">99</td><td data-v="96">96</td><td data-v="195">195</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="RPRX"><a href="charts/RPRX.png">RPRX</a> <span class="new">NEW</span></td><td class="l">Royalty Pharma plc Class A Ordinary </td><td class="l">Biotechnology: Pharmaceutical Prep</td><td data-v="58.18">58.18</td><td class="neg" data-v="-0.60">-0.6</td><td class="neg" data-v="-34.13">-34.1</td><td data-v="23">23</td><td data-v="88">88</td><td data-v="86">86</td><td data-v="174">174</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="TVTX"><a href="charts/TVTX.png">TVTX</a></td><td class="l">Travere Therapeutics Inc. Common Sto</td><td class="l">Biotechnology: Pharmaceutical Prep</td><td data-v="56.71">56.71</td><td class="pos" data-v="2.59">+2.6</td><td class="neg" data-v="-33.41">-33.4</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="97">97</td><td data-v="96">96</td><td data-v="193">193</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="CTOS"><a href="charts/CTOS.png">CTOS</a></td><td class="l">Custom Truck One Source Inc. Common </td><td class="l">Diversified Commercial Services</td><td data-v="10.34">10.34</td><td class="neg" data-v="-0.77">-0.8</td><td class="neg" data-v="-3.82">-3.8</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="92">92</td><td data-v="95">95</td><td data-v="187">187</td><td data-v="C">C</td></tr>
+<tr><td class="l" data-v="ANDE"><a href="charts/ANDE.png">ANDE</a></td><td class="l">Andersons Inc. (The) Common Stock</td><td class="l">Farming/Seeds/Milling</td><td data-v="79.24">79.24</td><td class="pos" data-v="3.99">+4.0</td><td class="neg" data-v="-24.95">-24.9</td><td data-v="833">833</td><td data-v="91">91</td><td data-v="91">91</td><td data-v="182">182</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="CASY"><a href="charts/CASY.png">CASY</a> <span class="new">NEW</span></td><td class="l">Casey&#x27;s General Stores Inc. Common S</td><td class="l">Retail-Auto Dealers and Gas Statio</td><td data-v="859.12">859.12</td><td class="pos" data-v="3.88">+3.9</td><td class="neg" data-v="-42.35">-42.3</td><td data-v="66">66</td><td data-v="86">86</td><td data-v="90">90</td><td data-v="176">176</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="KOP"><a href="charts/KOP.png">KOP</a></td><td class="l">Koppers Holdings Inc. Common Stock</td><td class="l">Forest Products</td><td data-v="49.14">49.14</td><td class="pos" data-v="0.18">+0.2</td><td class="pos" data-v="14.72">+14.7</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="91">91</td><td data-v="87">87</td><td data-v="178">178</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="COCO"><a href="charts/COCO.png">COCO</a> <span class="new">NEW</span></td><td class="l">The Vita Coco Company Inc. Common St</td><td class="l">Beverages (Production/Distribution</td><td data-v="73.18">73.18</td><td class="neg" data-v="-0.10">-0.1</td><td class="neg" data-v="-25.63">-25.6</td><td data-v="61">61</td><td data-v="93">93</td><td data-v="91">91</td><td data-v="184">184</td><td data-v="D-">D-</td></tr>
+<tr><td class="l" data-v="MNST"><a href="charts/MNST.png">MNST</a> <span class="new">NEW</span></td><td class="l">Monster Beverage Corporation</td><td class="l">Beverages (Production/Distribution</td><td data-v="97.50">97.50</td><td class="neg" data-v="-2.44">-2.4</td><td class="pos" data-v="76.54">+76.5</td><td data-v="29">29</td><td data-v="86">86</td><td data-v="89">89</td><td data-v="175">175</td><td data-v="C+">C+</td></tr>
+<tr><td class="l" data-v="ETSY"><a href="charts/ETSY.png">ETSY</a> <span class="new">NEW</span></td><td class="l">Etsy Inc. Common Stock</td><td class="l">Business Services</td><td data-v="84.10">84.10</td><td class="pos" data-v="0.74">+0.7</td><td class="neg" data-v="-34.54">-34.5</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="85">85</td><td data-v="99">99</td><td data-v="184">184</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="FLYW"><a href="charts/FLYW.png">FLYW</a></td><td class="l">Flywire Corporation Voting Common St</td><td class="l">Business Services</td><td data-v="18.13">18.13</td><td class="neg" data-v="-3.00">-3.0</td><td class="neg" data-v="-24.63">-24.6</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="86">86</td><td data-v="99">99</td><td data-v="185">185</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="LQDT"><a href="charts/LQDT.png">LQDT</a> <span class="new">NEW</span></td><td class="l">Liquidity Services Inc. Common Stock</td><td class="l">Business Services</td><td data-v="39.52">39.52</td><td class="neg" data-v="-3.66">-3.7</td><td class="pos" data-v="83.62">+83.6</td><td data-v="13">13</td><td data-v="85">85</td><td data-v="91">91</td><td data-v="176">176</td><td data-v="C+">C+</td></tr>
+<tr><td class="l" data-v="RELY"><a href="charts/RELY.png">RELY</a></td><td class="l">Remitly Global Inc. Common Stock</td><td class="l">Business Services</td><td data-v="24.13">24.13</td><td class="neg" data-v="-4.36">-4.4</td><td class="neg" data-v="-29.54">-29.5</td><td data-v="116">116</td><td data-v="88">88</td><td data-v="97">97</td><td data-v="185">185</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="XMTR"><a href="charts/XMTR.png">XMTR</a></td><td class="l">Xometry Inc. Class A Common Stock</td><td class="l">Business Services</td><td data-v="98.54">98.54</td><td class="pos" data-v="2.20">+2.2</td><td class="pos" data-v="69.72">+69.7</td><td data-v="500">500</td><td data-v="97">97</td><td data-v="93">93</td><td data-v="190">190</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="AIR"><a href="charts/AIR.png">AIR</a></td><td class="l">AAR Corp. Common Stock</td><td class="l">Aerospace</td><td data-v="135.34">135.34</td><td class="pos" data-v="1.39">+1.4</td><td class="pos" data-v="19.96">+20.0</td><td data-v="26">26</td><td data-v="87">87</td><td data-v="95">95</td><td data-v="182">182</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="ELMD"><a href="charts/ELMD.png">ELMD</a></td><td class="l">Electromed Inc. Common Stock</td><td class="l">Biotechnology: Electromedical &amp; El</td><td data-v="42.10">42.10</td><td class="neg" data-v="-1.64">-1.6</td><td class="pos" data-v="218.35">+218.3</td><td data-v="45">45</td><td data-v="94">94</td><td data-v="88">88</td><td data-v="182">182</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="ARMK"><a href="charts/ARMK.png">ARMK</a></td><td class="l">Aramark Common Stock</td><td class="l">Restaurants</td><td data-v="56.74">56.74</td><td class="neg" data-v="-0.44">-0.4</td><td class="neg" data-v="-25.59">-25.6</td><td data-v="44">44</td><td data-v="85">85</td><td data-v="88">88</td><td data-v="173">173</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="LOCO"><a href="charts/LOCO.png">LOCO</a> <span class="new">NEW</span></td><td class="l">El Pollo Loco Holdings Inc. Common S</td><td class="l">Restaurants</td><td data-v="16.59">16.59</td><td class="pos" data-v="0.24">+0.2</td><td class="neg" data-v="-39.88">-39.9</td><td data-v="47">47</td><td data-v="88">88</td><td data-v="86">86</td><td data-v="174">174</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="EZPW"><a href="charts/EZPW.png">EZPW</a></td><td class="l">EZCORP Inc. Class A Non Voting Commo</td><td class="l">Other Specialty Stores</td><td data-v="32.09">32.09</td><td class="neg" data-v="-1.32">-1.3</td><td class="neg" data-v="-41.76">-41.8</td><td data-v="71">71</td><td data-v="90">90</td><td data-v="94">94</td><td data-v="184">184</td><td data-v="E+">E+</td></tr>
+<tr><td class="l" data-v="BVS"><a href="charts/BVS.png">BVS</a></td><td class="l">Bioventus Inc. Class A Common Stock</td><td class="l">Medical/Dental Instruments</td><td data-v="12.06">12.06</td><td class="neg" data-v="-2.98">-3.0</td><td class="neg" data-v="-13.17">-13.2</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="90">90</td><td data-v="99">99</td><td data-v="189">189</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="BWAY"><a href="charts/BWAY.png">BWAY</a></td><td class="l">BrainsWay Ltd. American Depositary S</td><td class="l">Medical/Dental Instruments</td><td data-v="15.73">15.73</td><td class="pos" data-v="6.00">+6.0</td><td class="neg" data-v="-29.04">-29.0</td><td data-v="500">500</td><td data-v="92">92</td><td data-v="94">94</td><td data-v="186">186</td><td data-v="D+">D+</td></tr>
+<tr><td class="l" data-v="ROKU"><a href="charts/ROKU.png">ROKU</a></td><td class="l">Roku Inc. Class A Common Stock</td><td class="l">Cable &amp; Other Pay Television Servi</td><td data-v="144.43">144.43</td><td class="pos" data-v="0.42">+0.4</td><td class="neg" data-v="-38.59">-38.6</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="87">87</td><td data-v="87">87</td><td data-v="174">174</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="SN"><a href="charts/SN.png">SN</a></td><td class="l">SharkNinja Inc. Ordinary Shares</td><td class="l">Consumer Electronics/Appliances</td><td data-v="154.53">154.53</td><td class="pos" data-v="0.21">+0.2</td><td class="neg" data-v="-22.44">-22.4</td><td data-v="25">25</td><td data-v="87">87</td><td data-v="89">89</td><td data-v="176">176</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="CRWD"><a href="charts/CRWD.png">CRWD</a></td><td class="l">CrowdStrike Holdings Inc. Class A Co</td><td class="l">Computer Software: Prepackaged Sof</td><td data-v="203.08">203.08</td><td class="neg" data-v="-0.33">-0.3</td><td class="neg" data-v="-30.53">-30.5</td><td data-v="56">56</td><td data-v="95">95</td><td data-v="92">92</td><td data-v="187">187</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="DDOG"><a href="charts/DDOG.png">DDOG</a></td><td class="l">Datadog Inc. Class A Common Stock</td><td class="l">Computer Software: Prepackaged Sof</td><td data-v="258.69">258.69</td><td class="neg" data-v="-1.38">-1.4</td><td class="neg" data-v="-40.86">-40.9</td><td data-v="30">30</td><td data-v="96">96</td><td data-v="95">95</td><td data-v="191">191</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="FROG"><a href="charts/FROG.png">FROG</a></td><td class="l">JFrog Ltd. Ordinary Shares</td><td class="l">Computer Software: Prepackaged Sof</td><td data-v="88.54">88.54</td><td class="pos" data-v="2.32">+2.3</td><td class="neg" data-v="-35.01">-35.0</td><td data-v="35">35</td><td data-v="96">96</td><td data-v="92">92</td><td data-v="188">188</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="OKTA"><a href="charts/OKTA.png">OKTA</a></td><td class="l">Okta Inc. Class A Common Stock</td><td class="l">Computer Software: Prepackaged Sof</td><td data-v="149.35">149.35</td><td class="pos" data-v="1.09">+1.1</td><td class="neg" data-v="-32.46">-32.5</td><td data-v="6">6</td><td data-v="95">95</td><td data-v="85">85</td><td data-v="180">180</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="RDVT"><a href="charts/RDVT.png">RDVT</a> <span class="new">NEW</span></td><td class="l">Red Violet Inc. Common Stock</td><td class="l">Computer Software: Prepackaged Sof</td><td data-v="65.21">65.21</td><td class="neg" data-v="-1.38">-1.4</td><td class="neg" data-v="-23.86">-23.9</td><td data-v="39">39</td><td data-v="89">89</td><td data-v="93">93</td><td data-v="182">182</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="SNOW"><a href="charts/SNOW.png">SNOW</a></td><td class="l">Snowflake Inc. Common Stock</td><td class="l">Computer Software: Prepackaged Sof</td><td data-v="268.90">268.90</td><td class="neg" data-v="-0.41">-0.4</td><td class="neg" data-v="-35.63">-35.6</td><td data-v="63">63</td><td data-v="89">89</td><td data-v="92">92</td><td data-v="181">181</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="TENB"><a href="charts/TENB.png">TENB</a></td><td class="l">Tenable Holdings Inc. Common Stock</td><td class="l">Computer Software: Prepackaged Sof</td><td data-v="39.88">39.88</td><td class="pos" data-v="0.28">+0.3</td><td class="neg" data-v="-22.74">-22.7</td><td data-v="31">31</td><td data-v="94">94</td><td data-v="93">93</td><td data-v="187">187</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="TWLO"><a href="charts/TWLO.png">TWLO</a></td><td class="l">Twilio Inc. Class A Common Stock</td><td class="l">Computer Software: Prepackaged Sof</td><td data-v="206.78">206.78</td><td class="pos" data-v="0.04">+0.0</td><td class="neg" data-v="-2.62">-2.6</td><td data-v="32">32</td><td data-v="93">93</td><td data-v="97">97</td><td data-v="190">190</td><td data-v="B">B</td></tr>
+<tr><td class="l" data-v="ATLC"><a href="charts/ATLC.png">ATLC</a></td><td class="l">Atlanticus Holdings Corporation Comm</td><td class="l">Finance: Consumer Services</td><td data-v="100.68">100.68</td><td class="neg" data-v="-2.48">-2.5</td><td class="pos" data-v="16.75">+16.8</td><td data-v="50">50</td><td data-v="93">93</td><td data-v="97">97</td><td data-v="190">190</td><td data-v="B-">B-</td></tr>
+<tr><td class="l" data-v="DAVE"><a href="charts/DAVE.png">DAVE</a></td><td class="l">Dave Inc. Class A Common Stock</td><td class="l">Finance: Consumer Services</td><td data-v="440.42">440.42</td><td class="neg" data-v="-0.48">-0.5</td><td class="neg" data-v="-22.98">-23.0</td><td data-v="47">47</td><td data-v="97">97</td><td data-v="88">88</td><td data-v="185">185</td><td data-v="A">A</td></tr>
+<tr><td class="l" data-v="ENVA"><a href="charts/ENVA.png">ENVA</a></td><td class="l">Enova International Inc. Common Stoc</td><td class="l">Finance: Consumer Services</td><td data-v="232.52">232.52</td><td class="neg" data-v="-1.28">-1.3</td><td class="neg" data-v="-25.52">-25.5</td><td data-v="30">30</td><td data-v="94">94</td><td data-v="91">91</td><td data-v="185">185</td><td data-v="B+">B+</td></tr>
+<tr><td class="l" data-v="SEZL"><a href="charts/SEZL.png">SEZL</a></td><td class="l">Sezzle Inc. Common Stock</td><td class="l">Finance: Consumer Services</td><td data-v="174.67">174.67</td><td class="neg" data-v="-3.20">-3.2</td><td class="pos" data-v="1.65">+1.7</td><td data-v="43">43</td><td data-v="97">97</td><td data-v="95">95</td><td data-v="192">192</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="COMP"><a href="charts/COMP.png">COMP</a></td><td class="l">Compass Inc. Class A Common Stock</td><td class="l">EDP Services</td><td data-v="12.00">12.00</td><td class="neg" data-v="-1.48">-1.5</td><td class="neg" data-v="-21.38">-21.4</td><td class="t999" data-v="999" title="Turned profitable (growth off a non-positive base is not a meaningful %), or real growth beyond 999% — the classic 999 convention">999</td><td data-v="91">91</td><td data-v="96">96</td><td data-v="187">187</td><td data-v="A-">A-</td></tr>
+<tr><td class="l" data-v="OOMA"><a href="charts/OOMA.png">OOMA</a></td><td class="l">Ooma Inc. Common Stock</td><td class="l">EDP Services</td><td data-v="20.67">20.67</td><td class="neg" data-v="-0.77">-0.8</td><td class="neg" data-v="-21.59">-21.6</td><td data-v="75">75</td><td data-v="92">92</td><td data-v="97">97</td><td data-v="189">189</td><td data-v="B">B</td></tr>
+</tbody></table></div><div class="foot-actions"><button class="dlcsv" data-filename="open8585_2026-07-18.csv">download CSV (current view)</button> &middot; <a href="data/screen_2026-07-18.csv">raw CSV</a></div><p class="disclaimer">Educational reconstruction of a proprietary methodology from public data; ratings are approximations. Not investment advice. Not affiliated with Investor's Business Daily or William O'Neil + Co.</p><div id="lightbox" hidden><div class="lb-inner"><img alt="weekly chart"><div class="lb-cap"><span class="lb-sym"></span><span>&larr; &rarr; navigate &middot; esc closes &middot; <a class="lb-link" href="#">open PNG</a></span></div></div></div>
+<script>
+const SCALE = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","D-","E+","E","E-"];
+const gradeRank = g => { const i = SCALE.indexOf(g); return i < 0 ? 99 : i; };
+
+function headers(table) {
+  return [...table.tHead.rows[0].cells].map(th => ({
+    key: th.dataset.key, type: th.dataset.type || "text", el: th }));
+}
+
+// --- sorting ---
+document.querySelectorAll("table").forEach(table => {
+  const hs = headers(table);
+  hs.forEach((h, i) => h.el.addEventListener("click", () => {
+    const dir = h.el.classList.contains("asc") ? "desc" : "asc";
+    hs.forEach(x => x.el.classList.remove("asc", "desc"));
+    h.el.classList.add(dir);
+    const rows = [...table.tBodies[0].rows].sort((a, b) => {
+      let x = a.cells[i].dataset.v ?? a.cells[i].textContent;
+      let y = b.cells[i].dataset.v ?? b.cells[i].textContent;
+      let cmp;
+      if (h.type === "grade") cmp = gradeRank(y) - gradeRank(x);
+      else if (h.type === "num") cmp = (parseFloat(x) || -1e12) - (parseFloat(y) || -1e12);
+      else cmp = String(x).localeCompare(String(y));
+      return dir === "asc" ? cmp : -cmp;
+    });
+    rows.forEach(r => table.tBodies[0].appendChild(r));
+  }));
+});
+
+// --- stackable filters: bare words AND col-op-value expressions,
+//     `-term` negates, quotes group phrases: -"real estate" excludes REITs ---
+const OPS = [">=", "<=", ">", "<", "="];
+function parseQuery(q) {
+  const tokens = q.toLowerCase().match(/-?"[^"]*"|\S+/g) || [];
+  return tokens.map(tok => {
+    const neg = tok.startsWith("-") && tok.length > 1;
+    let t = neg ? tok.slice(1) : tok;
+    t = t.replace(/^"|"$/g, "");
+    if (!t) return null;
+    for (const op of OPS) {
+      const i = t.indexOf(op);
+      if (i > 0) return { neg, key: t.slice(0, i), op, val: t.slice(i + op.length) };
+    }
+    return { neg, text: t };
+  }).filter(Boolean);
+}
+function termMatches(row, hs, t) {
+  if (t.text !== undefined) return row.textContent.toLowerCase().includes(t.text);
+  const hi = hs.findIndex(h => h.key === t.key);
+  if (hi < 0) return false;
+  const cell = row.cells[hi];
+  const raw = cell.dataset.v ?? cell.textContent;
+  let a, b;
+  if (hs[hi].type === "grade") { a = -gradeRank(raw.toUpperCase()); b = -gradeRank(t.val.toUpperCase()); }
+  else { a = parseFloat(raw); b = parseFloat(t.val); }
+  if (isNaN(a) || isNaN(b)) return false;
+  return { ">=": a >= b, "<=": a <= b, ">": a > b, "<": a < b, "=": a === b }[t.op];
+}
+function rowPasses(row, hs, terms) {
+  return terms.every(t => t.neg ? !termMatches(row, hs, t) : termMatches(row, hs, t));
+}
+const box = document.querySelector("input.filter");
+if (box) {
+  const table = document.querySelector("table");
+  const hs = headers(table);
+  const count = document.querySelector(".count");
+  const apply = () => {
+    const terms = parseQuery(box.value);
+    let shown = 0;
+    for (const row of table.tBodies[0].rows) {
+      const ok = rowPasses(row, hs, terms);
+      row.style.display = ok ? "" : "none";
+      if (ok) shown++;
+    }
+    if (count) count.textContent = shown + " shown";
+    // keep the query in the URL so filters are bookmarkable
+    const url = box.value.trim()
+      ? "#q=" + encodeURIComponent(box.value.trim())
+      : location.pathname + location.search;
+    history.replaceState(null, "", url);
+  };
+  const fromUrl = () => {
+    const m = location.hash.match(/^#q=(.*)$/);
+    box.value = m ? decodeURIComponent(m[1]) : "";
+    apply();
+  };
+  box.addEventListener("input", apply);
+  window.addEventListener("hashchange", fromUrl);
+  fromUrl();
+}
+
+// --- chart lightbox: click a symbol -> floating popup; arrow keys walk
+//     the visible (filtered/sorted) listing; plain links are the no-JS fallback ---
+const lb = document.getElementById("lightbox");
+if (lb) {
+  const img = lb.querySelector("img");
+  const capSym = lb.querySelector(".lb-sym");
+  const capLink = lb.querySelector(".lb-link");
+  let current = null;
+
+  const chartLinks = () =>
+    [...document.querySelectorAll("tbody tr")]
+      .filter(r => r.style.display !== "none")
+      .map(r => r.querySelector('a[href^="charts/"]'))
+      .filter(Boolean);
+
+  function show(link) {
+    current = link;
+    img.src = link.getAttribute("href");
+    const sym = link.textContent.trim();
+    capSym.textContent = sym;
+    capLink.href = link.getAttribute("href");
+    lb.hidden = false;
+    const links = chartLinks();
+    const i = links.indexOf(link);
+    for (const n of [links[i - 1], links[i + 1]])
+      if (n) new Image().src = n.getAttribute("href"); // preload neighbors
+  }
+  function step(delta) {
+    const links = chartLinks();
+    const i = links.indexOf(current);
+    if (i < 0) return;
+    const next = links[i + delta];
+    if (next) show(next);
+  }
+  document.addEventListener("click", e => {
+    const a = e.target.closest('a[href^="charts/"]');
+    if (a && !e.metaKey && !e.ctrlKey) { e.preventDefault(); show(a); }
+    else if (!lb.hidden && !e.target.closest(".lb-inner")) lb.hidden = true;
+  });
+  document.addEventListener("keydown", e => {
+    if (lb.hidden) return;
+    if (e.key === "Escape") lb.hidden = true;
+    else if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); step(1); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); step(-1); }
+  });
+}
+
+// --- download the current (filtered, sorted) view as CSV ---
+const dl = document.querySelector("button.dlcsv");
+if (dl) {
+  dl.addEventListener("click", () => {
+    const table = document.querySelector("table");
+    const esc = s => '"' + String(s).replaceAll('"', '""') + '"';
+    const head = [...table.tHead.rows[0].cells].map(c => esc(c.textContent.trim()));
+    const lines = [head.join(",")];
+    for (const row of table.tBodies[0].rows) {
+      if (row.style.display === "none") continue;
+      lines.push([...row.cells].map(c =>
+        esc((c.dataset.v ?? c.textContent).replace(/\s*NEW$/, "").trim())).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = dl.dataset.filename || "table.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+</script>
+</body>
+</html>
