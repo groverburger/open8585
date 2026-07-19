@@ -155,14 +155,32 @@ def main() -> None:
     print("[charts] rendering")
     prices = pd.read_parquet(args.data_dir / "prices.parquet")
     spx = charts.get_benchmark(args.data_dir / "benchmark.parquet")
+    chart_dir = args.site_dir / "charts"
+    # every list member must ship with a chart: --max-charts caps fresh
+    # renders for testing, but members whose PNG is missing render anyway
     members = screen if args.max_charts is None else screen.head(args.max_charts)
-    for _, row in members.iterrows():
+    want = set(members["symbol"])
+    want |= {s for s in screen["symbol"] if not (chart_dir / f"{s}.png").exists()}
+    rendered = 0
+    for _, row in screen[screen["symbol"].isin(want)].iterrows():
         daily = (prices[prices["symbol"] == row["symbol"]]
                  .set_index("date").sort_index())
         charts.render_chart(row["symbol"], str(row.get("name", "")), daily, spx,
-                            args.site_dir / "charts" / f"{row['symbol']}.png",
+                            chart_dir / f"{row['symbol']}.png",
                             eps_ttm=eps_ttm_series(row["symbol"], args.data_dir))
-    print(f"[charts] {len(members)} member charts")
+        rendered += 1
+    # prune charts for symbols no longer on the list
+    current = set(screen["symbol"])
+    pruned = 0
+    for png in chart_dir.glob("*.png"):
+        if png.stem not in current:
+            png.unlink()
+            pruned += 1
+    still_missing = [s for s in current if not (chart_dir / f"{s}.png").exists()]
+    print(f"[charts] rendered {rendered}, pruned {pruned} orphans, "
+          f"missing after build: {len(still_missing)}")
+    if still_missing:
+        sys.exit(f"ABORT: members without charts: {still_missing}")
 
     from open8585.site import build_pages_site  # noqa: E402
     run_stamp = pd.Timestamp.now(tz="America/Los_Angeles").strftime("%Y-%m-%d %H:%M %Z")

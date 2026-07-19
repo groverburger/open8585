@@ -45,6 +45,16 @@ EXCLUDE_NAME_FRAGMENTS = (
 
 CACHE_MAX_AGE_DAYS = 3
 
+# NASDAQ's screener leaves `industry` blank for a handful of listings
+# (spinoffs and recent movers). Patches below apply ONLY when the source
+# field is empty, assigning the bucket their closest peers carry.
+INDUSTRY_OVERRIDES = {
+    "GEV": ("Industrials", "Industrial Machinery/Components"),   # GE Vernova - turbines/grid, peers VRT/POWL/NVT
+    "BELFA": ("Industrials", "Electrical Products"),             # Bel Fuse - electronic components, peer APH
+    "BELFB": ("Industrials", "Electrical Products"),
+    "ELVA": ("Industrials", "Industrial Machinery/Components"),  # Electrovaya - lithium battery systems
+}
+
 
 def _fetch_screener() -> list[dict]:
     resp = requests.get(
@@ -120,5 +130,8 @@ def load_universe(cache_path: Path, refresh: bool = False) -> pd.DataFrame:
 
     df["symbol"] = df["symbol"].map(to_yahoo_symbol)
     df = df.drop_duplicates(subset="symbol")
+    for sym, (sector, industry) in INDUSTRY_OVERRIDES.items():
+        hit = (df["symbol"] == sym) & (df["industry"].fillna("").str.strip() == "")
+        df.loc[hit, ["sector", "industry"]] = [sector, industry]
     keep = ["symbol", "name", "sector", "industry", "market_cap", "last_sale", "country", "ipo_year"]
     return df[keep].reset_index(drop=True)

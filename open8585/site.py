@@ -306,7 +306,7 @@ def _screen_rows(screen: pd.DataFrame, debuts: set[str]) -> str:
             "<tr>"
             f'<td class="l" data-v="{r["symbol"]}"><a href="charts/{r["symbol"]}.png">{r["symbol"]}</a>{star}</td>'
             f'<td class="l">{html.escape(str(r.get("name", ""))[:36])}</td>'
-            f'<td class="l">{html.escape(str(r.get("industry", ""))[:34])}</td>'
+            f'<td class="l">{html.escape(str(r.get("industry") or "").strip()[:34]) or "–"}</td>'
             + _fmt(r.get("price"))
             + _fmt(r.get("price_day_chg"), "chg")
             + _fmt(r.get("vol_pct_chg"), "chg")
