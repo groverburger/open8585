@@ -13,6 +13,7 @@ Bare words text-match symbol/name/industry; `col>=value` (also >, <=, <,
 from __future__ import annotations
 
 import html
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -382,6 +383,58 @@ def _page(title: str, body: str, path: str = "") -> str:
     )
 
 
+def _jsonable(v):
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return None
+    if pd.isna(v):
+        return None
+    if hasattr(v, "item"):
+        return v.item()
+    return v
+
+
+def write_list_json(screen: pd.DataFrame, debuts: set[str], dropoffs: set[str],
+                    run_date: str, run_stamp: str, site_dir: Path) -> None:
+    """Machine-readable list at api/list.json — a stable URL other scripts
+    can consume (GitHub Pages serves it with open CORS)."""
+    stocks = []
+    for _, r in screen.iterrows():
+        eps_chg = r.get("eps_q0_growth")
+        if pd.notna(eps_chg):
+            eps_chg = float(max(min(eps_chg, 999), -999))
+        stocks.append({
+            "symbol": r["symbol"],
+            "name": str(r.get("name") or ""),
+            "industry": str(r.get("industry") or "") or None,
+            "group_rank": _jsonable(r.get("industry_rank")),
+            "price": _jsonable(round(r["price"], 2) if pd.notna(r.get("price")) else None),
+            "price_day_chg_pct": _jsonable(round(r["price_day_chg"], 2) if pd.notna(r.get("price_day_chg")) else None),
+            "vol_vs_50d_pct": _jsonable(round(r["vol_pct_chg"], 1) if pd.notna(r.get("vol_pct_chg")) else None),
+            "eps_chg_pct": _jsonable(eps_chg),
+            "eps_source": str(r.get("eps_source") or "") or None,
+            "rs": _jsonable(r.get("rs_rating")),
+            "eps": _jsonable(r.get("eps_rating")),
+            "eps_rs": _jsonable(r.get("eps_rs_sum")),
+            "ad": str(r.get("ad_rating") or "") or None,
+            "new_this_week": r["symbol"] in debuts,
+            "chart": f"{PAGES_URL}/charts/{r['symbol']}.png",
+        })
+    payload = {
+        "generated_at": run_stamp,
+        "data_through": run_date,
+        "count": len(stocks),
+        "screen": "EPS>=85, RS>=85, price>=$10, within 15% of 52-week closing high, ADV>=10k shares",
+        "debuts": sorted(debuts),
+        "dropoffs": sorted(dropoffs),
+        "stocks": stocks,
+        "docs": REPO_URL,
+        "disclaimer": DISCLAIMER,
+    }
+    api = site_dir / "api"
+    api.mkdir(parents=True, exist_ok=True)
+    (api / "list.json").write_text(json.dumps(payload, indent=1))
+
+
 def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str],
                      dropoffs: set[str], run_date: str, site_dir: Path,
                      assets_dir: Path | None = None, run_stamp: str | None = None) -> None:
@@ -409,7 +462,8 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
         f'validated against the commercial originals</p>'
         f'<p class="meta">computed {stamp} · {len(screen)} stocks · '
         f'<a href="{REPO_URL}">methodology &amp; source</a> · '
-        f'<a href="ratings.html">full ratings table</a></p>'
+        f'<a href="ratings.html">full ratings table</a> · '
+        f'<a href="api/list.json">JSON</a></p>'
         "<p>Stocks with EPS and RS ratings of 85+ (percentile-ranked 1&ndash;99 against "
         "the full US stock universe), priced $10+, within 15% of their 52-week closing "
         "high, average volume 10,000+ shares. NEW marks first appearance vs the "
@@ -439,6 +493,7 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
     )
     (site_dir / "ratings.html").write_text(_page("open8585 — full ratings, every US stock", rbody, "ratings.html"))
 
+    write_list_json(screen, debuts, dropoffs, run_date, stamp, site_dir)
     screen.to_csv(site_dir / "data" / f"screen_{run_date}.csv", index=False)
     keep = [c for c in ("symbol", "name", "industry", "industry_rank", "price", "pct_off_high",
                         "rs_rating", "eps_rating", "ad_rating") if c in rated.columns]

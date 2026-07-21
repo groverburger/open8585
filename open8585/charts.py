@@ -227,8 +227,8 @@ TAGLINE = "The 85-85 growth screen, rebuilt in the open"
 
 
 def render_og_card(out_path: Path, n_stocks: int, n_universe: int) -> None:
-    """1200x630 OpenGraph card: wordmark, tagline, weekly-bars motif."""
-    rng = np.random.default_rng(85)
+    """1200x630 OpenGraph card: wordmark left, brand-styled weekly chart right."""
+    rng = np.random.default_rng(858585)
     fig = plt.figure(figsize=(12, 6.3), dpi=100)
     fig.patch.set_facecolor(C["surface"])
     ax = fig.add_axes([0, 0, 1, 1])
@@ -236,27 +236,52 @@ def render_og_card(out_path: Path, n_stocks: int, n_universe: int) -> None:
     ax.set_xlim(0, 12)
     ax.set_ylim(0, 6.3)
 
-    # faint weekly-bars motif rising across the lower band
-    x = np.linspace(0.6, 11.4, 44)
-    trend = 1.1 + 1.5 * (x - 0.6) / 10.8
-    close = trend + np.cumsum(rng.normal(0, 0.08, len(x))) * 0.5
-    close -= close.min() - 1.0
-    hi = close + rng.uniform(0.06, 0.22, len(x))
-    lo = close - rng.uniform(0.06, 0.22, len(x))
+    # ---- right panel: a polished mini weekly chart in the house style ----
+    n = 40
+    x0, x1, y0, y1 = 7.1, 11.55, 1.5, 5.35
+    xs = np.linspace(x0, x1, n)
+    drift = np.linspace(0, 1, n) ** 1.35 * 2.1
+    noise = np.cumsum(rng.normal(0, 0.11, n))
+    noise -= np.linspace(noise[0], noise[-1], n)  # pin endpoints
+    close = y0 + 0.55 + drift + noise * 0.55
+    close = np.clip(close, y0 + 0.25, y1 - 0.15)
+    rngs = rng.uniform(0.09, 0.30, n)
+    hi = close + rngs * 0.6
+    lo = close - rngs * 0.6
     up = np.r_[True, np.diff(close) >= 0]
-    for xi, h, l, c, u in zip(x, hi, lo, close, up):
+    ma = pd.Series(close).rolling(8, min_periods=1).mean().to_numpy()
+    bw = (x1 - x0) / n
+    for xi, h, l, c, u in zip(xs, hi, lo, close, up):
         col = C["up"] if u else C["down"]
-        ax.plot([xi, xi], [l, h], color=col, lw=2.2, alpha=0.35, solid_capstyle="round")
-        ax.plot([xi, xi + 0.09], [c, c], color=col, lw=2.2, alpha=0.35)
+        ax.plot([xi, xi], [l, h], color=col, lw=3.0, solid_capstyle="round", zorder=3)
+        ax.plot([xi, xi + bw * 0.42], [c, c], color=col, lw=3.0, zorder=3)
+    ax.plot(xs, ma, color=C["ma10"], lw=3.2, zorder=4, solid_capstyle="round")
+    ax.axhline(max(hi) + 0.06, xmin=x0 / 12, xmax=(x1 + 0.25) / 12,
+               color=C["muted"], lw=1.4, linestyle=(0, (5, 4)), zorder=2)
+    ax.text(x1, max(hi) + 0.17, "52w high", fontsize=11, color=C["muted"], ha="right")
+    # volume band under the chart
+    vol = rng.uniform(0.12, 0.5, n) * (1 + drift / 3)
+    for xi, v, u in zip(xs, vol, up):
+        col = C["up"] if u else C["down"]
+        ax.plot([xi, xi], [0.55, 0.55 + v * 0.9], color=col, lw=3.0, alpha=0.45,
+                solid_capstyle="round")
 
-    ax.text(0.6, 4.9, "open8585", fontsize=54, fontweight="bold", color=C["ink"])
-    ax.text(0.62, 4.25, TAGLINE, fontsize=21, color=C["ink2"])
-    ax.text(0.62, 3.55,
-            f"RS · EPS · A/D ratings for {n_universe:,} US stocks — formulas public,\n"
-            f"validated against the commercial originals, recomputed every Friday",
-            fontsize=14.5, color=C["muted"], linespacing=1.5)
-    ax.text(0.62, 0.42, f"{n_stocks} stocks on this week's list", fontsize=13,
-            color=C["ink2"])
+    # ---- left panel: wordmark and copy ----
+    ax.text(0.62, 4.62, "open", fontsize=64, fontweight="bold", color=C["ink"])
+    ax.text(3.03, 4.62, "8585", fontsize=64, fontweight="bold", color=C["up"])
+    ax.plot([0.66, 6.3], [4.32, 4.32], color=C["grid"], lw=2)
+    ax.text(0.64, 3.78, "The 85-85 growth screen,", fontsize=25, color=C["ink"])
+    ax.text(0.64, 3.32, "rebuilt in the open", fontsize=25, color=C["ink"])
+    ax.text(0.64, 2.42,
+            "RS · EPS · A/D ratings for every US stock.\n"
+            "Formulas public. Validated against the\n"
+            "commercial originals. Recomputed weekly.",
+            fontsize=15.5, color=C["ink2"], linespacing=1.65, va="top")
+    # stat chip
+    chip = f"{n_stocks} stocks this week · {n_universe:,} rated"
+    ax.text(0.64, 0.62, chip, fontsize=13.5, color=C["ink2"],
+            bbox=dict(boxstyle="round,pad=0.55", facecolor="#f4f3f0",
+                      edgecolor=C["grid"], linewidth=1.2))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, facecolor=C["surface"])
