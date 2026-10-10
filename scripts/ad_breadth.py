@@ -31,8 +31,8 @@ def main() -> None:
     args = parser.parse_args()
 
     history, added = breadth.update(pd.read_parquet(args.prices), args.output, args.start, args.rebuild)
-    print(f"{added} new session(s) through {history['date'].max():%Y-%m-%d}; "
-          f"saved {args.output} and {args.output.with_suffix('.png')}")
+    print(f"{added} new session(s) through {history['date'].max():%Y-%m-%d}"
+          + (f"; saved {args.output} and {args.output.with_suffix('.png')}" if added else ""))
     if args.site_dir:
         from open8585.site import build_breadth_page
         build_breadth_page(args.output, args.site_dir)

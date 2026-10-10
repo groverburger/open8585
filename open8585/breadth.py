@@ -85,6 +85,10 @@ def update(prices: pd.DataFrame, csv_path: Path, start: pd.Timestamp = BACKFILL_
     prices = prices[["date", "symbol", "open", "high", "low", "close", "volume"]].copy()
     prices["date"] = pd.to_datetime(prices["date"]).dt.tz_localize(None)
     new = letter_shares(prices, start)
+    if existing is not None and new.empty:
+        # leave the files untouched: a redraw alone differs byte-for-byte
+        # across matplotlib builds and would make empty commits
+        return existing, 0
     history = new if existing is None else pd.concat([existing, new], ignore_index=True)
     history["date"] = pd.to_datetime(history["date"])
     if history.empty:
