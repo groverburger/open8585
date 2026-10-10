@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>open8585 — A/D breadth</title>
+<meta name="description" content="A weekly screen for stocks rated 85+ on both earnings growth and price strength. Proprietary Wall Street ratings reverse-engineered from public data, validated against the originals, recomputed every Friday.">
+<meta property="og:title" content="open8585 — A/D breadth">
+<meta property="og:description" content="A weekly screen for stocks rated 85+ on both earnings growth and price strength. Proprietary Wall Street ratings reverse-engineered from public data, validated against the originals, recomputed every Friday.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://groverburger.github.io/open8585/breadth.html">
+<meta property="og:image" content="https://groverburger.github.io/open8585/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+@font-face { font-family:"Berkeley Mono"; src:url("fonts/BerkeleyMono-Regular.woff2") format("woff2");
+             font-weight:400; font-display:swap; }
+@font-face { font-family:"Berkeley Mono"; src:url("fonts/BerkeleyMono-Bold.woff2") format("woff2");
+             font-weight:700; font-display:swap; }
+:root { --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --line:#e1e0d9;
+        --surface:#fcfcfb; --accent:#2a78d6; --down:#a83232; --up-t:#006300; }
+* { box-sizing:border-box; }
+body { font-family:"Berkeley Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+       color:var(--ink); background:var(--surface); margin:0; padding:18px 20px;
+       font-size:13px; }
+h1 { font-size:17px; margin:0 0 2px; }
+p { color:var(--ink2); line-height:1.45; max-width:88ch; margin:6px 0; }
+a { color:var(--accent); }
+.meta { color:var(--muted); font-size:12px; }
+input.filter { font:inherit; padding:5px 9px; margin:10px 0 6px; width:min(560px,100%);
+               border:1px solid var(--line); border-radius:4px;
+               background:var(--surface); color:var(--ink); }
+.hint { color:var(--muted); font-size:11px; margin:0 0 8px; }
+.count { color:var(--ink2); font-size:12px; margin-left:8px; }
+.tbl { overflow-x:auto; }
+table { border-collapse:collapse; font-variant-numeric:tabular-nums; }
+th,td { padding:3px 9px; text-align:right; border-bottom:1px solid var(--line);
+        white-space:nowrap; }
+th { color:var(--ink2); font-weight:700; position:sticky; top:0;
+     background:var(--surface); cursor:pointer; user-select:none; }
+th:after { content:""; }
+th.asc:after { content:" \2191"; } th.desc:after { content:" \2193"; }
+td.l, th.l { text-align:left; }
+tr:hover td { background:#f4f3f0; }
+.new { color:var(--up-t); font-weight:700; font-size:11px; }
+.pos { color:var(--up-t); } .neg { color:var(--down); }
+.disclaimer { color:var(--muted); font-size:11px; margin-top:28px; max-width:88ch; }
+td.t999 { text-decoration:underline dotted var(--muted); text-underline-offset:2px; cursor:help; }
+.foot-actions { margin-top:14px; }
+button.dlcsv { font:inherit; padding:5px 10px; border:1px solid var(--line); border-radius:4px;
+               background:var(--surface); color:var(--ink); cursor:pointer; }
+button.dlcsv:hover { background:#f4f3f0; }
+#lightbox { position:fixed; inset:0; background:rgba(11,11,11,0.55); display:flex;
+            align-items:center; justify-content:center; z-index:10; }
+#lightbox[hidden] { display:none; }
+.lb-inner { background:var(--surface); border-radius:6px; padding:10px 10px 6px;
+            max-width:min(96vw, 1000px); box-shadow:0 8px 40px rgba(11,11,11,0.35); }
+.lb-inner img { display:block; max-width:100%; max-height:82vh; }
+.lb-cap { display:flex; justify-content:space-between; color:var(--muted);
+          font-size:11px; padding:6px 2px 2px; }
+.lb-cap a { color:var(--accent); }
+img.figure { display:block; width:100%; max-width:1000px; height:auto; margin:10px 0 6px;
+             border:1px solid var(--line); border-radius:4px; }
+</style>
+</head>
+<body>
+<h1>A/D breadth</h1><p class="meta">through 2026-10-09 · updated after every trading day · <a href="index.html">the 85-85 list</a> · <a href="ratings.html">full ratings table</a> · <a href="https://github.com/groverburger/open8585">methodology</a></p><p>The share of all rated US stocks holding each Accumulation/Distribution letter grade (A = heavy accumulation, E = heavy distribution), computed for every session. A rising A+B share means institutional buying is broadening; a rising D+E share means selling is.</p><img class="figure" src="ad_breadth.png" alt="Line chart of the daily share of rated stocks in each A/D letter grade, A through E, since January 2025"><div class="tbl"><table><thead><tr><th class="l" data-key="when" data-type="text"></th><th class="l" data-key="date" data-type="text">Date</th><th class="" data-key="a" data-type="num">A %</th><th class="" data-key="b" data-type="num">B %</th><th class="" data-key="c" data-type="num">C %</th><th class="" data-key="d" data-type="num">D %</th><th class="" data-key="e" data-type="num">E %</th><th class="" data-key="rated" data-type="num">Rated</th></tr></thead><tbody>
+<tr><td class="l">latest</td><td class="l">2026-10-09</td><td data-v="10.35">10.3</td><td data-v="29.17">29.2</td><td data-v="23.66">23.7</td><td data-v="21.62">21.6</td><td data-v="15.20">15.2</td><td data-v="5296">5,296</td></tr>
+<tr><td class="l">1 week ago</td><td class="l">2026-10-02</td><td data-v="11.33">11.3</td><td data-v="28.18">28.2</td><td data-v="23.12">23.1</td><td data-v="21.65">21.6</td><td data-v="15.72">15.7</td><td data-v="5298">5,298</td></tr>
+<tr><td class="l">1 month ago</td><td class="l">2026-09-10</td><td data-v="13.31">13.3</td><td data-v="33.93">33.9</td><td data-v="22.55">22.6</td><td data-v="19.28">19.3</td><td data-v="10.93">10.9</td><td data-v="5290">5,290</td></tr>
+<tr><td class="l">3 months ago</td><td class="l">2026-07-13</td><td data-v="18.07">18.1</td><td data-v="40.72">40.7</td><td data-v="20.99">21.0</td><td data-v="13.91">13.9</td><td data-v="6.30">6.3</td><td data-v="5268">5,268</td></tr>
+<tr><td class="l">1 year ago</td><td class="l">2025-10-08</td><td data-v="20.13">20.1</td><td data-v="36.39">36.4</td><td data-v="20.80">20.8</td><td data-v="15.45">15.4</td><td data-v="7.24">7.2</td><td data-v="5043">5,043</td></tr>
+</tbody></table></div><div class="foot-actions"><a href="data/ad_breadth.csv">raw CSV (every session)</a></div><p class="disclaimer">Educational reconstruction of a proprietary methodology from public data; ratings are approximations. Not investment advice. Not affiliated with Investor's Business Daily or William O'Neil + Co.</p>
+<script>
+const SCALE = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","D-","E"];
+const gradeRank = g => { const i = SCALE.indexOf(g); return i < 0 ? 99 : i; };
+
+function headers(table) {
+  return [...table.tHead.rows[0].cells].map(th => ({
+    key: th.dataset.key, type: th.dataset.type || "text", el: th }));
+}
+
+// --- sorting ---
+document.querySelectorAll("table").forEach(table => {
+  const hs = headers(table);
+  hs.forEach((h, i) => h.el.addEventListener("click", () => {
+    const dir = h.el.classList.contains("asc") ? "desc" : "asc";
+    hs.forEach(x => x.el.classList.remove("asc", "desc"));
+    h.el.classList.add(dir);
+    const rows = [...table.tBodies[0].rows].sort((a, b) => {
+      let x = a.cells[i].dataset.v ?? a.cells[i].textContent;
+      let y = b.cells[i].dataset.v ?? b.cells[i].textContent;
+      let cmp;
+      if (h.type === "grade") cmp = gradeRank(y) - gradeRank(x);
+      else if (h.type === "num") cmp = (parseFloat(x) || -1e12) - (parseFloat(y) || -1e12);
+      else cmp = String(x).localeCompare(String(y));
+      return dir === "asc" ? cmp : -cmp;
+    });
+    rows.forEach(r => table.tBodies[0].appendChild(r));
+  }));
+});
+
+// --- stackable filters: bare words AND col-op-value expressions,
+//     `-term` negates, quotes group phrases: -"real estate" excludes REITs ---
+const OPS = [">=", "<=", ">", "<", "="];
+function parseQuery(q) {
+  const tokens = q.toLowerCase().match(/-?"[^"]*"|\S+/g) || [];
+  return tokens.map(tok => {
+    const neg = tok.startsWith("-") && tok.length > 1;
+    let t = neg ? tok.slice(1) : tok;
+    t = t.replace(/^"|"$/g, "");
+    if (!t) return null;
+    for (const op of OPS) {
+      const i = t.indexOf(op);
+      if (i > 0) return { neg, key: t.slice(0, i), op, val: t.slice(i + op.length) };
+    }
+    return { neg, text: t };
+  }).filter(Boolean);
+}
+function termMatches(row, hs, t) {
+  if (t.text !== undefined) return row.textContent.toLowerCase().includes(t.text);
+  const hi = hs.findIndex(h => h.key === t.key);
+  if (hi < 0) return false;
+  const cell = row.cells[hi];
+  const raw = cell.dataset.v ?? cell.textContent;
+  let a, b;
+  if (hs[hi].type === "grade") { a = -gradeRank(raw.toUpperCase()); b = -gradeRank(t.val.toUpperCase()); }
+  else { a = parseFloat(raw); b = parseFloat(t.val); }
+  if (isNaN(a) || isNaN(b)) return false;
+  return { ">=": a >= b, "<=": a <= b, ">": a > b, "<": a < b, "=": a === b }[t.op];
+}
+function rowPasses(row, hs, terms) {
+  return terms.every(t => t.neg ? !termMatches(row, hs, t) : termMatches(row, hs, t));
+}
+const box = document.querySelector("input.filter");
+if (box) {
+  const table = document.querySelector("table");
+  const hs = headers(table);
+  const count = document.querySelector(".count");
+  const apply = () => {
+    const terms = parseQuery(box.value);
+    let shown = 0;
+    for (const row of table.tBodies[0].rows) {
+      const ok = rowPasses(row, hs, terms);
+      row.style.display = ok ? "" : "none";
+      if (ok) shown++;
+    }
+    if (count) count.textContent = shown + " shown";
+    // keep the query in the URL so filters are bookmarkable
+    const url = box.value.trim()
+      ? "#q=" + encodeURIComponent(box.value.trim())
+      : location.pathname + location.search;
+    history.replaceState(null, "", url);
+  };
+  const fromUrl = () => {
+    const m = location.hash.match(/^#q=(.*)$/);
+    box.value = m ? decodeURIComponent(m[1]) : "";
+    apply();
+  };
+  box.addEventListener("input", apply);
+  window.addEventListener("hashchange", fromUrl);
+  fromUrl();
+}
+
+// --- chart lightbox: click a symbol -> floating popup; arrow keys walk
+//     the visible (filtered/sorted) listing; plain links are the no-JS fallback ---
+const lb = document.getElementById("lightbox");
+if (lb) {
+  const img = lb.querySelector("img");
+  const capSym = lb.querySelector(".lb-sym");
+  const capLink = lb.querySelector(".lb-link");
+  let current = null;
+
+  const chartLinks = () =>
+    [...document.querySelectorAll("tbody tr")]
+      .filter(r => r.style.display !== "none")
+      .map(r => r.querySelector('a[href^="charts/"]'))
+      .filter(Boolean);
+
+  function show(link) {
+    current = link;
+    img.src = link.getAttribute("href");
+    const sym = link.textContent.trim();
+    capSym.textContent = sym;
+    capLink.href = link.getAttribute("href");
+    lb.hidden = false;
+    const links = chartLinks();
+    const i = links.indexOf(link);
+    for (const n of [links[i - 1], links[i + 1]])
+      if (n) new Image().src = n.getAttribute("href"); // preload neighbors
+  }
+  function step(delta) {
+    const links = chartLinks();
+    const i = links.indexOf(current);
+    if (i < 0) return;
+    const next = links[i + delta];
+    if (next) show(next);
+  }
+  document.addEventListener("click", e => {
+    const a = e.target.closest('a[href^="charts/"]');
+    if (a && !e.metaKey && !e.ctrlKey) { e.preventDefault(); show(a); }
+    else if (!lb.hidden && !e.target.closest(".lb-inner")) lb.hidden = true;
+  });
+  document.addEventListener("keydown", e => {
+    if (lb.hidden) return;
+    if (e.key === "Escape") lb.hidden = true;
+    else if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); step(1); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); step(-1); }
+  });
+}
+
+// --- download the current (filtered, sorted) view as CSV ---
+const dl = document.querySelector("button.dlcsv");
+if (dl) {
+  dl.addEventListener("click", () => {
+    const table = document.querySelector("table");
+    const esc = s => '"' + String(s).replaceAll('"', '""') + '"';
+    const head = [...table.tHead.rows[0].cells].map(c => esc(c.textContent.trim()));
+    const lines = [head.join(",")];
+    for (const row of table.tBodies[0].rows) {
+      if (row.style.display === "none") continue;
+      lines.push([...row.cells].map(c =>
+        esc((c.dataset.v ?? c.textContent).replace(/\s*NEW$/, "").trim())).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = dl.dataset.filename || "table.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+</script>
+</body>
+</html>
