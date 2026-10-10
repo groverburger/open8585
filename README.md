@@ -28,8 +28,8 @@ python3 run_screen.py                 # full universe; first run ~1hr, then cach
 python3 run_screen.py --limit 500     # quick test, top 500 by market cap
 ```
 
-The screen: RS Rating ≥ 85, EPS Rating ≥ 85, price ≥ $10, within 15% of the
-52-week closing high, 50-day average volume ≥ 10,000 shares. Tighter overlays
+The screen: RS Rating ≥ 85, EPS Rating ≥ 85, price ≥ $15, within 15% of the
+52-week closing high, 3-month average daily volume ≥ 500,000 shares. Tighter overlays
 used by practitioners of the methodology:
 
 ```bash
@@ -43,9 +43,10 @@ site by hand: `python3 scripts/publish.py`.
 
 ## The ratings
 
-All three are percentile ranks, 1–99, against the full US stock universe —
+RS and EPS are percentile ranks, 1–99, against the full US stock universe —
 about 5,400 names after dropping preferreds, warrants, units, SPAC shells,
-closed-end funds, and exchange-traded debt.
+closed-end funds, and exchange-traded debt. A/D is an absolute technical state
+mapped to letter grades; it is not a cross-sectional percentile bucket.
 
 **RS Rating.** Twelve-month price performance with the most recent quarter
 double-weighted:
@@ -75,17 +76,25 @@ with no recent quarterly data gets no rating at all — that's what keeps
 shells and funds off the list. A displayed 999 means either "turned
 profitable" or genuine growth past 999%; hover the cell on the site.
 
-**Accumulation/Distribution Rating.** Day-over-day direction on volume over
-13 weeks, recency-weighted with a ~1-month half-life, graded A+ through E−:
+**Accumulation/Distribution Rating.** A coefficient-free daily price/volume
+conviction balance, graded A+ through E. A session qualifies when price moves at least
+0.2% and volume exceeds the preceding 10-session mean. Its vote is strengthened
+by logarithmic relative volume and by price movement in 20-session ATR units:
 
 ```
-score = Σ clip(daily return, ±10%) · (volume ÷ avg volume) · decay ÷ Σ decay
+evidence = log2(1 + relative volume) · (1 + |ATR-normalized move|)
+U, D     = separate up/down evidence EMAs with a 20-session half-life
+score    = 100 · (U − D) / (U + D)
+grade    = frozen 2024-2025 boundaries(score)
 ```
 
-Up days on heavy volume read as institutional buying, down days as selling.
-The tempting alternative — where in the day's *range* the stock closed —
-turns out to be nearly uncorrelated with the commercial grades, because it
-can't see gap moves. This one lands within about a letter.
+There are zero fitted signal coefficients. Only the twelve fixed letter
+boundaries are calibrated, using 2024-2025 Global Laggards labels and official
+daily market-wide grade shares. On valid 2026 observations through April 24,
+64.9% of individual predictions land within one subgrade and the frozen broad
+market grade-distribution error is 1.90 percentage points. The full equation,
+lineage, and limitations are documented in
+[`docs/ad_conviction_balance_model.md`](docs/ad_conviction_balance_model.md).
 
 **Industry group rank** orders the ~150 industry groups by median member RS.
 It's the least faithful piece; the commercial products use their own group
@@ -103,7 +112,7 @@ in [STATUS.md](STATUS.md). Where it stands:
 |---|---|
 | RS | within ~1 point, 8 samples spanning 21–99 |
 | EPS | ~8 points mean error, no directional bias |
-| A/D | within ~1 letter, rank correlation 0.67 |
+| A/D | 64.9% within one subgrade; market grade-share MAE 1.90 pp on valid 2026 data |
 | list membership | 58% of a captured weekly list, every miss traced |
 
 Most of the remaining gap is data, not formulas: the commercial products run
@@ -138,6 +147,7 @@ open8585/
   site.py           # static pages
 run_screen.py       # CLI
 scripts/publish.py  # weekly build (also run by the GitHub Action)
+scripts/ad_breadth.py  # daily % of universe per A/D letter -> archive/ad_breadth.{csv,png}
 validation/         # captured commercial samples + comparison scripts
 ```
 

@@ -7,7 +7,7 @@ accepts stackable expressions ANDed together, e.g.:
     semiconductor rs>=90 eps>=85 ad>=B-
 
 Bare words text-match symbol/name/industry; `col>=value` (also >, <=, <,
-=) compares numeric columns; A/D grades compare on the A+..E- scale.
+=) compares numeric columns; A/D grades compare on the A+..E scale.
 """
 
 from __future__ import annotations
@@ -80,10 +80,12 @@ button.dlcsv:hover { background:#f4f3f0; }
 .lb-cap { display:flex; justify-content:space-between; color:var(--muted);
           font-size:11px; padding:6px 2px 2px; }
 .lb-cap a { color:var(--accent); }
+img.figure { display:block; width:100%; max-width:1000px; height:auto; margin:10px 0 6px;
+             border:1px solid var(--line); border-radius:4px; }
 """
 
 _JS = """
-const SCALE = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","D-","E+","E","E-"];
+const SCALE = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","D-","E"];
 const gradeRank = g => { const i = SCALE.indexOf(g); return i < 0 ? 99 : i; };
 
 function headers(table) {
@@ -423,7 +425,7 @@ def write_list_json(screen: pd.DataFrame, debuts: set[str], dropoffs: set[str],
         "generated_at": run_stamp,
         "data_through": run_date,
         "count": len(stocks),
-        "screen": "EPS>=85, RS>=85, price>=$10, within 15% of 52-week closing high, ADV>=10k shares",
+        "screen": "EPS>=85, RS>=85, price>=$15, within 15% of 52-week closing high, 3-month ADV>=500k shares",
         "debuts": sorted(debuts),
         "dropoffs": sorted(dropoffs),
         "stocks": stocks,
@@ -489,10 +491,11 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
         f'<p class="meta">computed {stamp} · {len(screen)} stocks · '
         f'<a href="{REPO_URL}">methodology &amp; source</a> · '
         f'<a href="ratings.html">full ratings table</a> · '
+        f'<a href="breadth.html">A/D breadth</a> · '
         f'<a href="api/list.json">JSON</a></p>'
         "<p>Stocks with EPS and RS ratings of 85+ (percentile-ranked 1&ndash;99 against "
-        "the full US stock universe), priced $10+, within 15% of their 52-week closing "
-        "high, average volume 10,000+ shares. NEW marks first appearance vs the "
+        "the full US stock universe), priced $15+, within 15% of their 52-week closing "
+        "high, 3-month average volume 500,000+ shares. NEW marks first appearance vs the "
         "prior week's list &mdash; the methodology's highest-signal event. "
         "Symbols link to weekly charts.</p>"
         + FILTER_UI + drop_note
@@ -509,7 +512,8 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
     rbody = (
         "<h1>Full ratings table</h1>"
         f'<p class="meta">computed {stamp} · {len(rsorted)} stocks · '
-        f'<a href="index.html">the 85-85 list</a> · <a href="{REPO_URL}">methodology</a></p>'
+        f'<a href="index.html">the 85-85 list</a> · <a href="breadth.html">A/D breadth</a> · '
+        f'<a href="{REPO_URL}">methodology</a></p>'
         + FILTER_UI
         + f'<div class="tbl"><table>{_thead(RATINGS_COLS)}<tbody>\n'
         + _ratings_rows(rsorted)
@@ -526,3 +530,48 @@ def build_pages_site(screen: pd.DataFrame, rated: pd.DataFrame, debuts: set[str]
     keep = [c for c in ("symbol", "name", "industry", "industry_rank", "price", "pct_off_high",
                         "rs_rating", "eps_rating", "ad_rating") if c in rated.columns]
     rated[keep].to_csv(site_dir / "data" / f"ratings_{run_date}.csv", index=False)
+
+
+def build_breadth_page(csv_path: Path, site_dir: Path) -> None:
+    """breadth.html: the daily A/D letter-grade mix chart plus a lookback table.
+
+    Self-contained (reads only the breadth CSV/PNG) so the daily job can
+    refresh it on the live site between weekly builds.
+    """
+    import shutil
+
+    csv_path, site_dir = Path(csv_path), Path(site_dir)
+    (site_dir / "data").mkdir(parents=True, exist_ok=True)
+    shutil.copy(csv_path.with_suffix(".png"), site_dir / "ad_breadth.png")
+    shutil.copy(csv_path, site_dir / "data" / "ad_breadth.csv")
+
+    history = pd.read_csv(csv_path, parse_dates=["date"])
+    last = history["date"].iloc[-1]
+    rows = []
+    for label, back in (("latest", 0), ("1 week ago", 5), ("1 month ago", 21),
+                        ("3 months ago", 63), ("1 year ago", 252)):
+        if back >= len(history):
+            continue
+        r = history.iloc[-1 - back]
+        cells = "".join(f'<td data-v="{r[g]:.2f}">{r[g]:.1f}</td>' for g in "ABCDE")
+        rows.append(f'<tr><td class="l">{label}</td><td class="l">{r["date"]:%Y-%m-%d}</td>'
+                    f'{cells}<td data-v="{int(r["rated"])}">{int(r["rated"]):,}</td></tr>')
+    cols = [("", "when", "text", "l"), ("Date", "date", "text", "l"),
+            *[(f"{g} %", g.lower(), "num", "") for g in "ABCDE"], ("Rated", "rated", "num", "")]
+    body = (
+        "<h1>A/D breadth</h1>"
+        f'<p class="meta">through {last:%Y-%m-%d} · updated after every trading day · '
+        f'<a href="index.html">the 85-85 list</a> · <a href="ratings.html">full ratings table</a> · '
+        f'<a href="{REPO_URL}">methodology</a></p>'
+        "<p>The share of all rated US stocks holding each Accumulation/Distribution letter "
+        "grade (A = heavy accumulation, E = heavy distribution), computed for every session. "
+        "A rising A+B share means institutional buying is broadening; a rising D+E share "
+        "means selling is.</p>"
+        f'<img class="figure" src="ad_breadth.png" alt="Line chart of the daily share of rated stocks '
+        f'in each A/D letter grade, A through E, since {history["date"].iloc[0]:%B %Y}">'
+        f'<div class="tbl"><table>{_thead(cols)}<tbody>\n' + "\n".join(rows)
+        + "\n</tbody></table></div>"
+        '<div class="foot-actions"><a href="data/ad_breadth.csv">raw CSV (every session)</a></div>'
+        f'<p class="disclaimer">{DISCLAIMER}</p>'
+    )
+    (site_dir / "breadth.html").write_text(_page("open8585 — A/D breadth", body, "breadth.html"))

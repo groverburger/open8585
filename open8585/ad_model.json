@@ -1,0 +1,76 @@
+{
+  "model": "ad_ema_conviction_balance_v1",
+  "signal_model": "ema_conviction_balance_100",
+  "signal_coefficients": 0,
+  "promoted_on": "2026-09-22",
+  "trained_through": "2025-12-31",
+  "ground_truth_valid_through": "2026-04-24",
+  "ground_truth_invalid_from": "2026-04-27",
+  "memory_type": "true_exponential_moving_average",
+  "half_life_sessions": 20.0,
+  "volume_lookback": 10,
+  "atr_lookback": 20,
+  "minimum_absolute_return": 0.002,
+  "minimum_relative_volume": 1.0,
+  "atr_move_cap": 1.0,
+  "volume_transform": "log2(1 + relative_volume)",
+  "evidence_formula": "log2(1 + relative_volume) * (1 + abs(clipped_atr_move))",
+  "score_formula": "100 * (ema_positive_evidence - ema_negative_evidence) / (ema_positive_evidence + ema_negative_evidence)",
+  "score_range": [
+    -100.0,
+    100.0
+  ],
+  "grade_calibration": "fixed coarse boundaries fitted on 2024-2025 official daily market shares; internal boundaries fitted on 2024-2025 Global Laggards labels; selected C-band observed-share recalibration preserves every coarse boundary",
+  "internal_grade_calibration": "c_observed_share_75pct",
+  "grade_values": [
+    "E",
+    "D-",
+    "D",
+    "D+",
+    "C-",
+    "C",
+    "C+",
+    "B-",
+    "B",
+    "B+",
+    "A-",
+    "A",
+    "A+"
+  ],
+  "grade_thresholds": [
+    -30.684010209862702,
+    -22.778246196649842,
+    -15.058281620379942,
+    -11.87880266107041,
+    -3.8535151919915176,
+    2.2851098463169595,
+    5.111067544378887,
+    20.532192692683413,
+    24.094060332509027,
+    37.042540790342954,
+    46.39769728076267,
+    59.53363136770642
+  ],
+  "liquid_validation_universe": {
+    "minimum_close": 5.0,
+    "minimum_adv20": 1000000.0
+  },
+  "validation_2025_individual": {
+    "observations": 11795,
+    "stock_raw_spearman": 0.719369,
+    "exact_subgrade": 0.321492,
+    "within_one_subgrade": 0.686562,
+    "subgrade_mae": 1.186604
+  },
+  "validation_2026_through_2026_04_24_individual": {
+    "observations": 4053,
+    "stock_raw_spearman": 0.644941,
+    "exact_subgrade": 0.305206,
+    "within_one_subgrade": 0.649396,
+    "subgrade_mae": 1.311868
+  },
+  "research_artifacts": [
+    "validation/ad_clean_effort_result_experiments.json",
+    "validation/ad_internal_grade_calibration.json"
+  ]
+}

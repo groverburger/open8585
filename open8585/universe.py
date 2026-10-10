@@ -85,7 +85,7 @@ def to_yahoo_symbol(symbol: str) -> str:
     return symbol.replace("/", "-")
 
 
-def load_universe(cache_path: Path, refresh: bool = False) -> pd.DataFrame:
+def load_universe(cache_path: Path, refresh: bool = False, allow_stale: bool = False) -> pd.DataFrame:
     """Return the listed-stock universe as a DataFrame.
 
     Columns: symbol (Yahoo format), name, sector, industry, market_cap,
@@ -97,7 +97,7 @@ def load_universe(cache_path: Path, refresh: bool = False) -> pd.DataFrame:
     if cache_path.exists() and not refresh:
         age_days = (time.time() - cache_path.stat().st_mtime) / 86400
         stale = age_days > CACHE_MAX_AGE_DAYS
-    if stale or refresh:
+    if (stale and not allow_stale) or refresh:
         rows = _fetch_screener()
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text(json.dumps(rows))

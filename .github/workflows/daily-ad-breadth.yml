@@ -1,0 +1,88 @@
+name: daily-ad-breadth
+
+# After every trading day: append the session's A/D letter-grade mix to
+# archive/ad_breadth.csv, redraw archive/ad_breadth.png, and refresh
+# breadth.html on the live site branch (the weekly build replaces the
+# whole branch; this only adds a commit on top). Shares the weekly job's
+# price cache, so most days are a small incremental pull.
+on:
+  schedule:
+    # weekdays 4:30PM Pacific (23:30 UTC during PDT; 3:30PM PST in winter —
+    # both well after the 1PM PT close, so the day's bar is final)
+    - cron: "30 23 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  breadth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Restore price/universe cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/prices.parquet
+            data/universe.json
+            data/benchmark.parquet
+          key: open8585-data-${{ github.run_id }}
+          restore-keys: open8585-data-
+
+      - name: Update prices
+        run: |
+          if [ ! -f data/prices.parquet ]; then
+            python -c "from pathlib import Path; from open8585.prices import download_prices; \
+          from open8585.universe import load_universe; \
+          u = load_universe(Path('data/universe.json')); \
+          download_prices(u['symbol'].tolist(), Path('data/prices.parquet'))"
+          fi
+          # a market holiday returns no new rows; that is not a failure
+          python scripts/update_prices_incremental.py --through "$(TZ=America/New_York date +%F)" \
+            || echo "::warning::no new price rows"
+
+      - name: Append A/D breadth
+        run: python scripts/ad_breadth.py
+
+      - name: Save price/universe cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/prices.parquet
+            data/universe.json
+            data/benchmark.parquet
+          key: open8585-data-${{ github.run_id }}
+
+      - name: Commit breadth to master
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add archive/ad_breadth.csv archive/ad_breadth.png
+          git diff --cached --quiet || git commit -m "A/D breadth $(TZ=America/New_York date +%F)"
+          git pull --rebase origin master
+          git push
+
+      - name: Refresh breadth page on the live site
+        run: |
+          git fetch -q origin site
+          git worktree add -q live origin/site
+          python -c "from pathlib import Path; from open8585.site import build_breadth_page; \
+          build_breadth_page(Path('archive/ad_breadth.csv'), Path('live'))"
+          cd live
+          git add -A
+          git diff --cached --quiet || {
+            git commit -q -m "A/D breadth $(TZ=America/New_York date +%F)"
+            git push origin HEAD:site
+          }

@@ -22,7 +22,7 @@ stock universe. 99 means the stock outperformed 99% of stocks.
 **EPS Rating (1–99)** — a percentile rank of earnings growth quality: recent
 quarterly growth blended with the multi-year record.
 
-**A/D Rating (A+ to E−)** — a letter grade for institutional accumulation
+**A/D Rating (A+ to E)** — a letter grade for institutional accumulation
 (buying) versus distribution (selling), read from price/volume behavior.
 
 **The 85-85 list** — stocks rated 85+ on both EPS and RS, priced $10+, within
@@ -138,7 +138,7 @@ testing against captures:
   spinoff, on the 85-85 list) argues it isn't categorical. One sample each
   way; unimplemented.
 
-### A/D Rating: the least reproducible rating — an open problem
+### A/D Rating: reconstructed from the Global Laggards archive
 
 This is where honest reporting matters most, because our first conclusion
 did not survive out-of-sample testing, and we're keeping both the original
@@ -160,13 +160,32 @@ possibly volume-versus-price divergence (accumulation into weakness) rather
 than volume-with-price confirmation. That's a hypothesis for future work,
 not a claim.
 
-Where that leaves the evidence: across 25 labels, no formula we tested
-reproduces IBD's A/D reliably; the three systems' A/D grades correlate
-pairwise at only ~0.16–0.49 on the fresh panel. **Treat every cross-vendor
-A/D comparison — including ours — as low-confidence.** Our published A/D
-remains the direction-times-volume construction (it at least beat
-close-location on pooled labels and has a defensible economic reading), but
-it is the one rating in this project we cannot claim tracks IBD.
+Those small early panels were superseded in August 2026 by 74,304 extracted
+table labels from 271 Global Laggards PDFs. After testing both large fitted
+models and traditional technical indicators, the local application now uses a
+standalone EMA conviction balance with no fitted signal coefficients:
+
+```text
+qualify = |return| >= 0.2% and volume > prior 10-session mean
+evidence = log2(1 + relative volume) * (1 + |move in ATR20 units|)
+U, D = separate up/down evidence EMAs with a 20-session half-life
+score = 100 * (U - D) / (U + D)
+```
+
+Twelve fixed boundaries, calibrated on 2024-2025 individual labels and
+official daily market shares, convert the score to A+ through E. The Global
+Laggards report clock is aligned to its preceding completed U.S. session. Rank
+agreement is 0.719 in 2025 and 0.645 in valid 2026; after the selected C-only
+internal-boundary calibration, 68.7% and 64.9% fall within one subgrade. Frozen
+broad market-share error is 2.00 and 1.90 percentage points. The preceding
+65-session robust ledger and the prior 282-coefficient model are retained in
+the production-model archive. The full lineage and limitations are in
+`docs/ad_conviction_balance_model.md`.
+
+The source rating system broke beginning 2026-04-27, so later labels and
+aggregate percentages are excluded from all accuracy claims. The full lineage
+and limitations are recorded in `validation/ad_field_notes.md` and
+`docs/oneil_pdf_library.md`.
 
 ## The Deepvue system
 

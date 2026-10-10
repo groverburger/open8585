@@ -15,10 +15,10 @@ import yfinance as yf
 
 CHUNK_SIZE = 200
 CACHE_MAX_AGE_HOURS = 20
-# ~3 years: the ratings only need 252 trading days, but the published
-# weekly charts show 104 weeks and need 40 more weeks of runway so the
-# 40-week moving average spans the full chart width
-LOOKBACK_DAYS = 1050
+# Five calendar years gives historical RS calculations a full 252-trading-day
+# runway at every date in the retained window.  The published charts need much
+# less, but the cache is also our point-in-time price-history store.
+LOOKBACK_DAYS = 5 * 366
 
 
 def _normalize_chunk(raw: pd.DataFrame, symbols: list[str]) -> pd.DataFrame:

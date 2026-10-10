@@ -3,9 +3,10 @@
 static site artifacts for the GitHub Pages `site` branch.
 
 Outputs:
-  site/       index.html, ratings.html, charts/*.png, fonts/, data/*.csv
+  site/       index.html, ratings.html, breadth.html, charts/*.png, fonts/, data/*.csv
   archive/    one screen CSV per run (committed to master; also the
-              dataset for the debut backtest and week-over-week diffs)
+              dataset for the debut backtest and week-over-week diffs),
+              plus the daily A/D breadth CSV/PNG
 
 Usage:
   python3 scripts/publish.py                       # full run
@@ -180,6 +181,11 @@ def main() -> None:
     run_stamp = pd.Timestamp.now(tz="America/Los_Angeles").strftime("%Y-%m-%d %H:%M %Z")
     build_pages_site(screen, rated, debuts, dropoffs, run_date, args.site_dir,
                      assets_dir=ROOT / "assets" / "fonts", run_stamp=run_stamp)
+    from open8585 import breadth  # noqa: E402
+    from open8585.site import build_breadth_page  # noqa: E402
+    history, added = breadth.update(prices, args.archive_dir / "ad_breadth.csv")
+    build_breadth_page(args.archive_dir / "ad_breadth.csv", args.site_dir)
+    print(f"[breadth] {added} new session(s) through {history['date'].max():%Y-%m-%d}")
     print(f"[done] {len(screen)} stocks · site/ ready")
 
 

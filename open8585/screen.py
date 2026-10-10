@@ -1,7 +1,7 @@
 """The 85-85 screen pipeline.
 
 Funnel design: the cheap price-based filters run on the full universe
-first (price >= $10, within 15% of the 52-week high, ADV >= 10k shares,
+first (price >= $15, within 15% of the 52-week high, 3-month ADV >= 500k shares,
 RS rating >= 85). Fundamentals are then fetched only for those survivors
 plus a random reference sample of the universe, so EPS ratings are
 percentiled against the market rather than against the survivors.
@@ -24,9 +24,9 @@ from .universe import load_universe
 @dataclass
 class ScreenConfig:
     data_dir: Path = Path("data")
-    min_price: float = 10.0
+    min_price: float = 15.0
     max_pct_off_high: float = 15.0
-    min_adv: float = 10_000
+    min_adv: float = 500_000  # 3-month (63-session) average daily volume
     min_rs: int = 85
     min_eps: int = 85
     # Owen Cupp / Fred Richards-style overlays on the 85-85 list:
@@ -83,7 +83,7 @@ def run_screen(cfg: ScreenConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
     survivors = rated[
         (rated["price"] >= cfg.min_price)
         & (rated["pct_off_high"] >= -cfg.max_pct_off_high)
-        & (rated["adv50"] >= cfg.min_adv)
+        & (rated["adv3m"] >= cfg.min_adv)
         & (rated["rs_rating"] >= cfg.min_rs)
     ].copy()
     print(f"  {len(survivors)} survivors of price/RS filters")

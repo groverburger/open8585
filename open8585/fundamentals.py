@@ -78,7 +78,10 @@ def _fetch_one(symbol: str) -> dict:
     try:
         if SKIP_BULK_STREET:
             raise LookupError("bulk street fetch disabled")
-        ed = t.get_earnings_dates(limit=12)
+        # Yahoo permits up to 100 earnings-calendar rows.  Keep the complete
+        # available history rather than the prior short screen-only window so
+        # historical EPS ratings can be reconstructed from announcement dates.
+        ed = t.get_earnings_dates(limit=100)
         reported = ed["Reported EPS"].dropna() if ed is not None else pd.Series(dtype=float)
         rec["reported_eps"] = _series_to_records(reported.sort_index())
     except ImportError:

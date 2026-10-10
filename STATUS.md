@@ -73,7 +73,52 @@ differences, and ~6 (MTZ, WLFC, BJRI, OPLN, ILMN, FLXS, NHC at 58–74) are
 the residual formula difference: IBD rewards steady-but-slow earners more
 than pure growth percentiles imply.
 
-**A/D rating validated and fixed (2026-07-05)**: against 9 captured IBD
+**A/D EMA conviction balance promoted locally (2026-09-22)**: the application
+runtime now uses `ad_ema_conviction_balance_v1`. It retains the clean qualified
+daily evidence discovered by the robust ledger, but replaces the hard
+65-session window and `log((U+2)/(D+2))` stabilization with separate true EMAs
+and the bounded score `100*(U-D)/(U+D)`. Both ledgers use a 20-session
+half-life. The signal has zero fitted coefficients; fixed 2024-2025 boundaries
+map -100..+100 pressure to A+ through E. Timestamp-aligned individual-label
+rank agreement is 0.719 in 2025 and 0.645 in valid 2026; after the selected
+C-only internal-boundary calibration, 68.7%/64.9% fall within one subgrade.
+The exact equation, research path, calibration sources, failure modes, and
+deployment distinction are recorded in `docs/ad_conviction_balance_model.md`.
+The chart implementation now calls the application scorer directly. This is a
+local working-tree promotion; publishing the GitHub Pages list is separate.
+
+**Previous A/D robust-conviction ledger (promoted 2026-08-11)**: production used
+`ad_robust_conviction_ledger_v1`, a coefficient-free technical indicator.
+Meaningful up/down sessions qualify only above the prior 10-session mean
+volume; their evidence is `log2(1 + relative volume) × (1 + |ATR move|)` and
+decays over a 65-session ledger with a 20-session half-life. Twelve frozen
+2024-2025 boundaries map the state to A+ through E. Held-out 2025 results are
+0.685 stock-rank agreement, 66.0% within one subgrade, and 2.05 pp market
+grade-share MAE. Valid 2026 through April 24 is 0.606, 63.1%, and 1.82 pp.
+The outgoing 282-coefficient model remains byte-for-byte archived under
+`validation/production_models/` for rollback.
+
+**Previous A/D production model (2026-08-10 through 2026-08-11)**: the earlier nine-label model
+below has been replaced by `ad_multi_volume_contraction_spike_v1`, fitted on
+22,282 matched 2024-2025 Global Laggards table observations. It combines
+asymmetric daily-bar pressure, 10/20/50/100-session relative volume, six EWM
+memories, and a volume spike following five-session contraction. The frozen
+runtime artifact is `open8585/ad_model.json`; production never reads training
+labels or refits it. The originally reported through-August 2026 metrics were
+later found to include broken source ratings after 2026-04-24 and are
+superseded by the valid-period evaluation below.
+
+**Previous A/D market-wide recalibration (2026-08-11)**: exact daily O'Neil universe
+counts showed that the signal's timing was strong but the laggard-trained
+isotonic mapping produced far too few B grades and too many D grades. The
+282-feature signal remains frozen; production now uses 12 stable grade
+thresholds whose four coarse boundaries were fitted on 2025 market-wide grade
+shares. On 78 pre-break 2026 dates, aggregate A-E MAE improves from 8.78 to
+2.54 percentage points. The source rating system broke beginning 2026-04-27;
+all source labels and aggregate percentages from that date forward are
+excluded from accuracy claims.
+
+**Earlier A/D rating validation (2026-07-05)**: against 9 captured IBD
 grades, the original close-location (intraday range) formula was
 uncorrelated (Spearman +0.06) — it misses gap moves, so crash-on-volume
 names (COHR, MTSI, GOOGL) read as accumulation. Replaced with capped daily

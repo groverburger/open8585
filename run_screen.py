@@ -23,9 +23,9 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=Path(__file__).parent / "output")
     parser.add_argument("--min-rs", type=int, default=85, help="minimum RS rating (default 85)")
     parser.add_argument("--min-eps", type=int, default=85, help="minimum EPS rating (default 85)")
-    parser.add_argument("--min-price", type=float, default=10.0)
+    parser.add_argument("--min-price", type=float, default=15.0)
     parser.add_argument("--max-off-high", type=float, default=15.0, help="max %% below 52-week high")
-    parser.add_argument("--min-adv", type=float, default=10_000, help="min avg daily volume, shares")
+    parser.add_argument("--min-adv", type=float, default=500_000, help="min 3-month avg daily volume, shares")
     parser.add_argument("--min-ad", type=str, default=None, metavar="GRADE",
                         help="min A/D rating, e.g. B- (keeps B- and better); aggressive screen uses B-, conservative A-")
     parser.add_argument("--min-eps-rs", type=int, default=None,
@@ -73,7 +73,7 @@ def main() -> None:
         f"# open 85-85 screen — {stamp}\n\n"
         f"{len(table)} stocks: RS ≥ {cfg.min_rs}, EPS ≥ {cfg.min_eps}, "
         f"price ≥ ${cfg.min_price:.0f}, within {cfg.max_pct_off_high:.0f}% of 52-wk high, "
-        f"ADV ≥ {cfg.min_adv:,.0f} shares.\n\n" + table.to_markdown(index=False) + "\n"
+        f"3-month ADV ≥ {cfg.min_adv:,.0f} shares.\n\n" + table.to_markdown(index=False) + "\n"
     )
 
     pd.set_option("display.max_rows", None, "display.width", 200)
