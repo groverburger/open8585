@@ -42,11 +42,13 @@ def letter_shares(prices: pd.DataFrame, start: pd.Timestamp) -> pd.DataFrame:
 
 
 def plot(history: pd.DataFrame, path: Path) -> None:
+    """Chart the trailing year; the CSV keeps the full history."""
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    history = history[history["date"] >= history["date"].iloc[-1] - pd.DateOffset(years=1)]
     fig, ax = plt.subplots(figsize=(10.2, 5.6), dpi=160)
     fig.patch.set_facecolor(SURFACE)
     ax.set_facecolor(SURFACE)

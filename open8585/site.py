@@ -568,7 +568,7 @@ def build_breadth_page(csv_path: Path, site_dir: Path) -> None:
         "A rising A+B share means institutional buying is broadening; a rising D+E share "
         "means selling is.</p>"
         f'<img class="figure" src="ad_breadth.png" alt="Line chart of the daily share of rated stocks '
-        f'in each A/D letter grade, A through E, since {history["date"].iloc[0]:%B %Y}">'
+        f'in each A/D letter grade, A through E, over the past year">'
         f'<div class="tbl"><table>{_thead(cols)}<tbody>\n' + "\n".join(rows)
         + "\n</tbody></table></div>"
         '<div class="foot-actions"><a href="data/ad_breadth.csv">raw CSV (every session)</a></div>'
