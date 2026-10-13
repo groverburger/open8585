@@ -22,17 +22,21 @@ def main() -> None:
     parser.add_argument("--cache", type=Path, default=ROOT/"data"/"prices.parquet")
     parser.add_argument("--through", type=pd.Timestamp, required=True,
                         help="Inclusive final session requested")
+    parser.add_argument("--overlap-days", type=int, default=0,
+                        help="also re-fetch this many calendar days before the cached end, "
+                             "replacing those bars (fills bars a too-early run missed)")
     args = parser.parse_args()
 
     existing = pd.read_parquet(args.cache)
     existing["date"] = pd.to_datetime(existing.date).dt.tz_localize(None)
     last_date = existing.date.max()
-    if last_date >= args.through:
+    if last_date >= args.through and not args.overlap_days:
         print(f"cache already reaches {last_date.date()}")
         return
 
     symbols = sorted(existing.symbol.unique())
-    start = (last_date+pd.Timedelta(days=1)).date().isoformat()
+    start = (min(last_date, args.through)-pd.Timedelta(days=args.overlap_days)
+             +pd.Timedelta(days=1)).date().isoformat()
     end = (args.through+pd.Timedelta(days=1)).date().isoformat()
     frames = []
     failures = []

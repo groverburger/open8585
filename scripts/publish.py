@@ -183,7 +183,7 @@ def main() -> None:
                      assets_dir=ROOT / "assets" / "fonts", run_stamp=run_stamp)
     from open8585 import breadth  # noqa: E402
     from open8585.site import build_breadth_page  # noqa: E402
-    history, added = breadth.update(prices, args.archive_dir / "ad_breadth.csv")
+    history, added, _ = breadth.update(prices, args.archive_dir / "ad_breadth.csv")
     build_breadth_page(args.archive_dir / "ad_breadth.csv", args.site_dir)
     print(f"[breadth] {added} new session(s) through {history['date'].max():%Y-%m-%d}")
     print(f"[done] {len(screen)} stocks · site/ ready")

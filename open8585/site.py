@@ -548,7 +548,7 @@ def build_breadth_page(csv_path: Path, site_dir: Path) -> None:
     history = pd.read_csv(csv_path, parse_dates=["date"])
     last = history["date"].iloc[-1]
     rows = []
-    for label, back in (("latest", 0), ("1 week ago", 5), ("1 month ago", 21),
+    for label, back in (("latest", 0), ("1 day ago", 1), ("1 week ago", 5), ("1 month ago", 21),
                         ("3 months ago", 63), ("1 year ago", 252)):
         if back >= len(history):
             continue

@@ -1,8 +1,10 @@
 """A/D breadth: the daily share of the universe in each A/D letter grade.
 
 One row per trading session in archive/ad_breadth.csv, plus a PNG chart.
-Rows already recorded are never rewritten (Yahoo re-adjusts old bars, so
-recomputing would quietly revise history); rebuild=True recomputes all.
+The last REVISE_SESSIONS rows are recomputed on every run, so a run made
+soon after the close is corrected by later ones; older rows are frozen
+(Yahoo re-adjusts old bars, so recomputing would quietly revise history).
+rebuild=True recomputes all.
 
 Denominator: stocks with an A/D rating that session (63+ sessions of
 history and a bar that day).
@@ -18,6 +20,7 @@ from .ratings import ad_score_history
 
 LETTERS = "ABCDE"
 BACKFILL_START = pd.Timestamp("2025-01-02")
+REVISE_SESSIONS = 2
 # Diverging: accumulation blue, neutral gray C, distribution red.
 COLORS = {"A": "#184f95", "B": "#4f93e6", "C": "#b2b1aa", "D": "#e86663", "E": "#a32a28"}
 SURFACE, INK, MUTED, GRID = "#fcfcfb", "#0b0b0b", "#686762", "#e1e0d9"
@@ -73,30 +76,37 @@ def plot(history: pd.DataFrame, path: Path) -> None:
 
 
 def update(prices: pd.DataFrame, csv_path: Path, start: pd.Timestamp = BACKFILL_START,
-           rebuild: bool = False) -> tuple[pd.DataFrame, int]:
-    """Append sessions newer than the CSV, redraw the PNG beside it.
+           rebuild: bool = False) -> tuple[pd.DataFrame, int, bool]:
+    """Append new sessions and revise the last few, redraw the PNG beside it.
 
-    Returns (full history, number of new sessions).
+    Returns (full history, number of new sessions, whether the files changed).
     """
     csv_path = Path(csv_path)
     existing = None
     if csv_path.exists() and not rebuild:
         existing = pd.read_csv(csv_path, parse_dates=["date"])
-        start = existing["date"].max() + pd.Timedelta(days=1)
+        start = existing["date"].iloc[-min(REVISE_SESSIONS, len(existing))]
 
     prices = prices[["date", "symbol", "open", "high", "low", "close", "volume"]].copy()
     prices["date"] = pd.to_datetime(prices["date"]).dt.tz_localize(None)
-    new = letter_shares(prices, start)
-    if existing is not None and new.empty:
-        # leave the files untouched: a redraw alone differs byte-for-byte
-        # across matplotlib builds and would make empty commits
-        return existing, 0
-    history = new if existing is None else pd.concat([existing, new], ignore_index=True)
-    history["date"] = pd.to_datetime(history["date"])
+    recent = letter_shares(prices, start)
+    recent["date"] = pd.to_datetime(recent["date"])
+    if existing is None:
+        history, added = recent, len(recent)
+    else:
+        kept = existing[existing["date"] < start]
+        history = pd.concat([kept, recent], ignore_index=True)
+        added = int((recent["date"] > existing["date"].max()).sum())
+        unchanged = (len(history) == len(existing)
+                     and history.reset_index(drop=True).equals(existing.reset_index(drop=True)))
+        if unchanged:
+            # leave the files untouched: a redraw alone differs byte-for-byte
+            # across matplotlib builds and would make empty commits
+            return existing, 0, False
     if history.empty:
         raise ValueError("no rated sessions in range")
 
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     history.to_csv(csv_path, index=False, date_format="%Y-%m-%d")
     plot(history, csv_path.with_suffix(".png"))
-    return history, len(new)
+    return history, added, True
