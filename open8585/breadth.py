@@ -124,10 +124,15 @@ def plot(history: pd.DataFrame, path: Path, indexes: pd.DataFrame) -> None:
     for i, name in enumerate(INDEXES):
         close = indexes[name].dropna()
         signal = ma_signal(close).reindex(dates, method="ffill")
+        # SMAs from the full series (incl. the warm-up before the window)
+        smas = {n: close.rolling(n).mean().reindex(dates, method="ffill") for n in (FAST_SMA, SLOW_SMA)}
         close = close.reindex(dates, method="ffill")
         price_ax, step_ax = axes[1 + 2 * i], axes[2 + 2 * i]
         _style(price_ax)
+        for n, color in ((FAST_SMA, UP), (SLOW_SMA, DOWN)):
+            price_ax.plot(dates, smas[n], color=color, linewidth=1.0, alpha=0.55, label=f"{n}-day SMA")
         price_ax.plot(dates, close, color=INK, linewidth=1.3)
+        price_ax.legend(frameon=False, loc="upper left", fontsize=8, handlelength=1.6)
         price_ax.annotate(f"{close.iloc[-1]:,.0f}", (dates[-1], close.iloc[-1]), xytext=(6, 0),
                           textcoords="offset points", va="center", fontsize=9, color=INK)
         price_ax.set_title(name, loc="left", fontsize=10, color=INK)
