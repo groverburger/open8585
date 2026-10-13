@@ -566,9 +566,12 @@ def build_breadth_page(csv_path: Path, site_dir: Path) -> None:
         "<p>The share of all rated US stocks holding each Accumulation/Distribution letter "
         "grade (A = heavy accumulation, E = heavy distribution), computed for every session. "
         "A rising A+B share means institutional buying is broadening; a rising D+E share "
-        "means selling is.</p>"
-        f'<img class="figure" src="ad_breadth.png" alt="Line chart of the daily share of rated stocks '
-        f'in each A/D letter grade, A through E, over the past year">'
+        "means selling is. Below it, on the same dates, the S&amp;P 500 and NASDAQ Composite, "
+        "each with a step showing whether its 8-day simple moving average is above (+1) or "
+        "below (&minus;1) its 21-day.</p>"
+        f'<img class="figure" src="ad_breadth.png" alt="Over the past year: line chart of the daily '
+        f'share of rated stocks in each A/D letter grade, A through E; then S&amp;P 500 and NASDAQ '
+        f'Composite closes, each with a +1/-1 step for its 8-day SMA above or below its 21-day SMA">'
         f'<div class="tbl"><table>{_thead(cols)}<tbody>\n' + "\n".join(rows)
         + "\n</tbody></table></div>"
         '<div class="foot-actions"><a href="data/ad_breadth.csv">raw CSV (every session)</a></div>'
