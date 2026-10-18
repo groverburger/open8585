@@ -160,14 +160,13 @@ def render_chart(symbol: str, name: str, daily: pd.DataFrame, spx: pd.Series,
 
     # EPS panel: trailing-twelve-month EPS as a step line, own $ scale
     if axe is not None:
-        pos = wk.index.searchsorted(eps_ttm.index)
-        vals, xs = [], []
-        pre = eps_ttm[eps_ttm.index < wk.index[0]]
-        if len(pre):
-            xs.append(0)
-            vals.append(pre.iloc[-1])
-        for p, v in zip(pos, eps_ttm.to_numpy()):
-            if 0 <= p < len(wk):
+        # reports before the window collapse to their latest value at x=0;
+        # plotting each one there drew a vertical line through all history
+        pre = eps_ttm[eps_ttm.index <= wk.index[0]]
+        xs, vals = ([0], [pre.iloc[-1]]) if len(pre) else ([], [])
+        inside = eps_ttm[eps_ttm.index > wk.index[0]]
+        for p, v in zip(wk.index.searchsorted(inside.index), inside.to_numpy()):
+            if p < len(wk):
                 xs.append(p)
                 vals.append(v)
         if xs:

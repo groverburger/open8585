@@ -22,6 +22,8 @@ from .ratings import ad_score_history
 LETTERS = "ABCDE"
 BACKFILL_START = pd.Timestamp("2025-01-02")
 REVISE_SESSIONS = 2
+# a session rating fewer than this share of the recent median is a data gap
+SPARSE_FRACTION = 0.9
 # Diverging: accumulation blue, neutral gray C, distribution red.
 COLORS = {"A": "#184f95", "B": "#4f93e6", "C": "#b2b1aa", "D": "#e86663", "E": "#a32a28"}
 SURFACE, INK, MUTED, GRID = "#fcfcfb", "#0b0b0b", "#686762", "#e1e0d9"
@@ -139,8 +141,12 @@ def plot(history: pd.DataFrame, path: Path, indexes: pd.DataFrame) -> None:
         price_ax.yaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter("{x:,.0f}"))
 
         _style(step_ax)
-        step_ax.fill_between(dates, 0, signal.clip(lower=0), step="post", color=UP, linewidth=0)
-        step_ax.fill_between(dates, 0, signal.clip(upper=0), step="post", color=DOWN, linewidth=0)
+        # repeat the last value one session on, so a flip on the latest
+        # session gets width instead of vanishing at the right edge
+        step_x = dates.append(pd.DatetimeIndex([dates[-1] + pd.offsets.BDay(1)]))
+        step_y = pd.concat([signal, signal.iloc[-1:]]).to_numpy()
+        step_ax.fill_between(step_x, 0, np.clip(step_y, 0, None), step="post", color=UP, linewidth=0)
+        step_ax.fill_between(step_x, 0, np.clip(step_y, None, 0), step="post", color=DOWN, linewidth=0)
         step_ax.set_ylim(-1.3, 1.3)
         step_ax.set_yticks([-1, 1])
         step_ax.axhline(0, color="#c3c2b7", linewidth=0.8)
@@ -177,6 +183,16 @@ def update(prices: pd.DataFrame, csv_path: Path, start: pd.Timestamp = BACKFILL_
         history, added = recent, len(recent)
     else:
         kept = existing[existing["date"] < start]
+        # Yahoo sometimes serves the latest bar for only a sliver of the
+        # universe (seen ~8 PM ET); such a session is not breadth. Keep the
+        # row we already had, or wait for a later run to add it.
+        floor = SPARSE_FRACTION * kept["rated"].tail(5).median() if len(kept) else 0
+        sparse = recent["rated"] < floor
+        for _, row in recent[sparse].iterrows():
+            print(f"skipping sparse session {row['date']:%Y-%m-%d}: {row['rated']} rated "
+                  f"(< {floor:,.0f})")
+        prior = existing[existing["date"].isin(recent.loc[sparse, "date"])]
+        recent = pd.concat([recent[~sparse], prior]).sort_values("date")
         history = pd.concat([kept, recent], ignore_index=True)
         added = int((recent["date"] > existing["date"].max()).sum())
         unchanged = (len(history) == len(existing)
