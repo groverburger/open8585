@@ -65,10 +65,17 @@ def get_benchmark(cache_path: Path, lookback_days: int = 900) -> pd.Series:
     if cache_path.exists() and (time.time() - cache_path.stat().st_mtime) / 3600 < BENCH_CACHE_HOURS:
         return pd.read_parquet(cache_path)["close"]
     start = (pd.Timestamp.today() - pd.Timedelta(days=lookback_days)).date()
-    raw = yf.download("^GSPC", start=str(start), auto_adjust=True, progress=False)
-    close = raw["Close"]
-    if isinstance(close, pd.DataFrame):  # multi-index single ticker
-        close = close.iloc[:, 0]
+    for attempt in range(3):
+        raw = yf.download("^GSPC", start=str(start), auto_adjust=True, progress=False)
+        close = raw["Close"]
+        if isinstance(close, pd.DataFrame):  # multi-index single ticker
+            close = close.iloc[:, 0]
+        if close.notna().any():
+            break
+        time.sleep(15 * (attempt + 1))
+    else:
+        # an empty frame (e.g. rate-limited) would blank every RS line
+        raise RuntimeError("S&P 500 benchmark download returned no data")
     close.index = pd.to_datetime(close.index).tz_localize(None)
     out = close.rename("close").to_frame()
     cache_path.parent.mkdir(parents=True, exist_ok=True)
